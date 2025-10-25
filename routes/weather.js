@@ -1,128 +1,99 @@
 const express = require("express");
-const axios = require("axios");
-const auth = require("../middleware/auth");
-
+const https = require("https");
 const router = express.Router();
 
-// @route   GET /api/weather/:city
-// @desc    Get weather information for a city
-// @access  Private
-router.get("/:city", auth, async (req, res) => {
-  try {
-    const { city } = req.params;
-    const { days = 5 } = req.query;
+// Helper function to make https.get requests and parse JSON
+function httpsGet(url) {
+  return new Promise((resolve, reject) => {
+    // --- START OF FIX ---
+    // We must parse the URL to create the options object
+    const urlParts = new URL(url);
 
-    // Using OpenWeatherMap API (you'll need to get an API key)
-    const apiKey = process.env.WEATHER_API_KEY || "demo-key";
-    const url = `https://api.openweathermap.org/data/2.5/forecast?q=${city}&appid=${apiKey}&units=metric`;
-
-    const response = await axios.get(url);
-
-    // Process the data to get daily forecasts
-    const forecasts = response.data.list.reduce((acc, item) => {
-      const date = item.dt_txt.split(" ")[0];
-      if (!acc[date]) {
-        acc[date] = {
-          date,
-          temperature: Math.round(item.main.temp),
-          minTemp: Math.round(item.main.temp_min),
-          maxTemp: Math.round(item.main.temp_max),
-          humidity: item.main.humidity,
-          windSpeed: item.wind.speed,
-          condition: item.weather[0].main,
-          description: item.weather[0].description,
-          icon: item.weather[0].icon,
-        };
-      }
-      return acc;
-    }, {});
-
-    const dailyForecasts = Object.values(forecasts).slice(0, days);
-
-    res.json({
-      city: response.data.city.name,
-      country: response.data.city.country,
-      forecasts: dailyForecasts,
-    });
-  } catch (error) {
-    console.error("Weather API error:", error);
-
-    // Fallback data for demo purposes
-    const mockWeather = {
-      city: req.params.city,
-      country: "Demo",
-      forecasts: [
-        {
-          date: new Date().toISOString().split("T")[0],
-          temperature: 25,
-          minTemp: 20,
-          maxTemp: 30,
-          humidity: 65,
-          windSpeed: 5.2,
-          condition: "Clear",
-          description: "clear sky",
-          icon: "01d",
-        },
-        {
-          date: new Date(Date.now() + 86400000).toISOString().split("T")[0],
-          temperature: 23,
-          minTemp: 18,
-          maxTemp: 28,
-          humidity: 70,
-          windSpeed: 4.8,
-          condition: "Clouds",
-          description: "few clouds",
-          icon: "02d",
-        },
-      ],
+    const options = {
+      hostname: urlParts.hostname,
+      path: urlParts.pathname + urlParts.search,
+      method: "GET",
+      // Add headers to mimic a browser request
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.0.0 Safari/537.36",
+        Accept: "application/json",
+      },
     };
+    // --- END OF FIX ---
 
-    res.json(mockWeather);
-  }
-});
-
-// @route   GET /api/weather/coordinates/:lat/:lon
-// @desc    Get weather information by coordinates
-// @access  Private
-router.get("/coordinates/:lat/:lon", auth, async (req, res) => {
-  try {
-    const { lat, lon } = req.params;
-    const { days = 5 } = req.query;
-
-    const apiKey = process.env.WEATHER_API_KEY || "demo-key";
-    const url = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
-
-    const response = await axios.get(url);
-
-    const forecasts = response.data.list.reduce((acc, item) => {
-      const date = item.dt_txt.split(" ")[0];
-      if (!acc[date]) {
-        acc[date] = {
-          date,
-          temperature: Math.round(item.main.temp),
-          minTemp: Math.round(item.main.temp_min),
-          maxTemp: Math.round(item.main.temp_max),
-          humidity: item.main.humidity,
-          windSpeed: item.wind.speed,
-          condition: item.weather[0].main,
-          description: item.weather[0].description,
-          icon: item.weather[0].icon,
-        };
+    // Use https.request with the options object
+    const req = https.request(options, (res) => {
+      if (res.statusCode < 200 || res.statusCode >= 300) {
+        return reject(
+          new Error(`HTTPS request failed with status code ${res.statusCode}`)
+        );
       }
-      return acc;
-    }, {});
 
-    const dailyForecasts = Object.values(forecasts).slice(0, days);
+      let rawData = "";
+      res.on("data", (chunk) => {
+        rawData += chunk;
+      });
+      res.on("end", () => {
+        try {
+          const parsedData = JSON.parse(rawData);
+          resolve(parsedData);
+        } catch (e) {
+          reject(new Error(`Failed to parse JSON response: ${e.message}`));
+        }
+      });
+    });
 
+    req.on("error", (e) => {
+      reject(new Error(`HTTPS request error: ${e.message}`));
+    });
+
+    // End the request
+    req.end();
+  });
+}
+
+// The rest of your route file is UNCHANGED
+router.get("/", async (req, res) => {
+  const { city, startDate, endDate } = req.query;
+
+  if (!city || !startDate || !endDate) {
+    return res
+      .status(400)
+      .json({ message: "Missing required query parameters" });
+  }
+
+  try {
+    // 1. Geocode the city
+    const geoUrl = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(
+      city
+    )}&count=1`;
+    const geoResponse = await httpsGet(geoUrl);
+
+    const location = geoResponse.results?.[0];
+
+    if (!location) {
+      return res.status(404).json({ message: "City not found" });
+    }
+
+    const { latitude, longitude, timezone } = location;
+
+    // 2. Fetch the weather forecast
+    const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&start_date=${startDate}&end_date=${endDate}&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=auto`;
+    const weatherResponse = await httpsGet(weatherUrl);
+
+    // 3. Fetch the timezone data
+    const timezoneUrl = `https://worldtimeapi.org/api/timezone/${timezone}`;
+    const timezoneResponse = await httpsGet(timezoneUrl);
+
+    // 4. Send back BOTH weather and timezone data
     res.json({
-      city: response.data.city.name,
-      country: response.data.city.country,
-      coordinates: { lat: parseFloat(lat), lon: parseFloat(lon) },
-      forecasts: dailyForecasts,
+      weather: weatherResponse.daily,
+      timezone: timezoneResponse,
     });
   } catch (error) {
-    console.error("Weather coordinates API error:", error);
-    res.status(500).json({ message: "Weather service unavailable" });
+    console.error("Native HTTPS route error:", error.message);
+    res.status(500).json({ message: "Server error fetching data" });
   }
 });
 

@@ -1,159 +1,160 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import {
   Box,
   Typography,
-  TextField,
-  Button,
+  CircularProgress,
+  Alert,
   List,
   ListItem,
   ListItemText,
-  IconButton,
+  ListItemIcon,
   Checkbox,
-  CircularProgress,
-  Alert,
+  Button,
 } from "@mui/material";
-import { Delete } from "@mui/icons-material";
-import { PackingListItem } from "../types/trip";
+import { CloudDownload, CheckCircle } from "@mui/icons-material";
 
-interface PackingListWidgetProps {
-  tripId: string;
-  initialItems: PackingListItem[];
+interface Item {
+  name: string;
+  category: string;
+  required: boolean;
+  packed: boolean; // Add state for packing
 }
 
+interface PackingListWidgetProps {
+  city: string;
+  country: string;
+  // We need these stats from the weather API call result
+  avgTempMax: number;
+  isRainy: boolean;
+}
+
+// NOTE: PDF Export is a separate task we can tackle next
 const PackingListWidget: React.FC<PackingListWidgetProps> = ({
-  tripId,
-  initialItems,
+  city,
+  country,
+  avgTempMax,
+  isRainy,
 }) => {
-  const [items, setItems] = useState<PackingListItem[]>(initialItems);
-  const [newItemText, setNewItemText] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [items, setItems] = useState<Item[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const handleAddItem = async () => {
-    if (!newItemText.trim()) return;
+  useEffect(() => {
+    const fetchChecklist = async () => {
+      if (!city || !avgTempMax) return;
 
-    setLoading(true);
-    setError("");
-    try {
-      const response = await axios.post<PackingListItem>(
-        `/api/trips/${tripId}/packing-list`,
-        { item: newItemText }
-      );
-      setItems([...items, response.data]);
-      setNewItemText("");
-    } catch (err: any) {
-      setError(err.response?.data?.message || "Failed to add item");
-    } finally {
-      setLoading(false);
-    }
+      setLoading(true);
+      setError("");
+      try {
+        // Call our new backend API with the determined parameters
+        const response = await axios.get<Item[]>("/api/checklist", {
+          params: {
+            city,
+            country,
+            avgTempMax,
+            isRainy: isRainy ? "true" : "false",
+          },
+        });
+
+        // Add 'packed: false' state for the frontend
+        const listItems = response.data.map((item) => ({
+          ...item,
+          packed: false,
+        }));
+        setItems(listItems);
+      } catch (err: any) {
+        setError(
+          err.response?.data?.message || "Could not generate packing list."
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchChecklist();
+  }, [city, country, avgTempMax, isRainy]);
+
+  // Handle user checking an item
+  const handleToggle = (name: string) => {
+    setItems((prevItems) =>
+      prevItems.map((item) =>
+        item.name === name ? { ...item, packed: !item.packed } : item
+      )
+    );
   };
 
-  const handleTogglePacked = async (item: PackingListItem) => {
-    const newPackedStatus = !item.packed;
-    try {
-      // Optimistically update UI
-      setItems(
-        items.map((i) =>
-          i._id === item._id ? { ...i, packed: newPackedStatus } : i
-        )
-      );
+  if (loading) {
+    return (
+      <Box>
+        <CircularProgress size={20} />
+        <Typography sx={{ ml: 2 }}>Generating Checklist...</Typography>
+      </Box>
+    );
+  }
+  if (error) {
+    return <Alert severity="error">{error}</Alert>;
+  }
 
-      await axios.put(`/api/trips/${tripId}/packing-list/${item._id}`, {
-        packed: newPackedStatus,
-      });
-    } catch (err: any) {
-      setError(err.response?.data?.message || "Failed to update item");
-      // Revert UI on failure
-      setItems(
-        items.map((i) =>
-          i._id === item._id ? { ...i, packed: !newPackedStatus } : i
-        )
-      );
-    }
-  };
-
-  const handleDeleteItem = async (itemId: string) => {
-    try {
-      // Optimistically update UI
-      const originalItems = items;
-      setItems(items.filter((i) => i._id !== itemId));
-
-      await axios.delete(`/api/trips/${tripId}/packing-list/${itemId}`);
-    } catch (err: any) {
-      setError(err.response?.data?.message || "Failed to delete item");
-      // Revert UI on failure
-      // (This assumes you'd fetch the list again or restore 'originalItems')
-    }
-  };
-
-  const packedCount = items.filter((i) => i.packed).length;
-  const totalCount = items.length;
+  // Group items by category (Clothing, Essentials, etc.)
+  const groupedItems = items.reduce((acc, item) => {
+    (acc[item.category] = acc[item.category] || []).push(item);
+    return acc;
+  }, {} as Record<string, Item[]>);
 
   return (
     <Box>
-      <Typography variant="h6" gutterBottom>
-        Packing List ({packedCount} / {totalCount})
-      </Typography>
-
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
-        </Alert>
-      )}
-
-      <Box display="flex" gap={2} mb={2}>
-        <TextField
-          label="New packing item"
-          variant="outlined"
-          size="small"
-          fullWidth
-          value={newItemText}
-          onChange={(e) => setNewItemText(e.target.value)}
-          onKeyPress={(e) => e.key === "Enter" && handleAddItem()}
-        />
+      <Box display="flex" justifyContent="space-between" alignItems="center">
+        <Typography variant="h6">Packing Checklist</Typography>
         <Button
           variant="contained"
-          onClick={handleAddItem}
-          disabled={loading}
-          sx={{ minWidth: "auto", px: 2 }}
+          size="small"
+          startIcon={<CloudDownload />}
+          // onClick={handleExportPDF} // To be implemented
         >
-          {loading ? <CircularProgress size={24} color="inherit" /> : "Add"}
+          Export PDF
         </Button>
       </Box>
 
-      <List sx={{ maxHeight: 300, overflow: "auto" }}>
-        {items.map((item) => (
-          <ListItem
-            key={item._id}
-            disablePadding
-            secondaryAction={
-              <IconButton
-                edge="end"
-                aria-label="delete"
-                onClick={() => handleDeleteItem(item._id)}
-              >
-                <Delete />
-              </IconButton>
-            }
+      {items.length === 0 && (
+        <Alert severity="info" sx={{ mt: 1 }}>
+          Returning basic list. Template not found for these conditions.
+        </Alert>
+      )}
+
+      {Object.entries(groupedItems).map(([category, list]) => (
+        <Box key={category} mt={2}>
+          <Typography
+            variant="subtitle1"
+            fontWeight="bold"
+            sx={{ textTransform: "capitalize" }}
           >
-            <Checkbox
-              edge="start"
-              checked={item.packed}
-              onChange={() => handleTogglePacked(item)}
-              tabIndex={-1}
-              disableRipple
-            />
-            <ListItemText
-              primary={item.item}
-              sx={{
-                textDecoration: item.packed ? "line-through" : "none",
-                color: item.packed ? "text.secondary" : "text.primary",
-              }}
-            />
-          </ListItem>
-        ))}
-      </List>
+            {category}
+          </Typography>
+          <List dense>
+            {list.map((item) => (
+              <ListItem
+                key={item.name}
+                onClick={() => handleToggle(item.name)}
+                sx={{ cursor: "pointer", py: 0 }}
+              >
+                <ListItemIcon sx={{ minWidth: 40 }}>
+                  <Checkbox
+                    edge="start"
+                    checked={item.packed}
+                    tabIndex={-1}
+                    disableRipple
+                  />
+                </ListItemIcon>
+                <ListItemText
+                  primary={item.name}
+                  secondary={item.required ? "Required" : "Optional"}
+                  sx={{ textDecoration: item.packed ? "line-through" : "none" }}
+                />
+              </ListItem>
+            ))}
+          </List>
+        </Box>
+      ))}
     </Box>
   );
 };

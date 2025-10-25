@@ -5,8 +5,7 @@ import {
   Typography,
   CircularProgress,
   Alert,
-  Paper,
-  Icon, // Keep Icon
+  ListItem,
 } from "@mui/material";
 import {
   WbSunny,
@@ -15,20 +14,11 @@ import {
   AcUnit,
   Thunderstorm,
   FilterDrama,
-  AccessTime, // Import time icon
+  AccessTime,
 } from "@mui/icons-material";
 import { format } from "date-fns";
 
-// Props (no change)
-interface WeatherWidgetProps {
-  city: string;
-  startDate: string;
-  endDate: string;
-}
-
-// --- UPDATED INTERFACES ---
-
-// This interface is the same as before
+// --- INTERFACES ---
 interface DailyWeather {
   time: string[];
   weathercode: number[];
@@ -36,7 +26,6 @@ interface DailyWeather {
   temperature_2m_min: number[];
 }
 
-// New interface for the timezone data from WorldTimeAPI
 interface TimezoneData {
   datetime: string;
   abbreviation: string;
@@ -44,17 +33,30 @@ interface TimezoneData {
   utc_offset: string;
 }
 
-// New wrapper interface for the combined API response
 interface ApiData {
   weather: DailyWeather;
   timezone: TimezoneData;
 }
 
-// --- HELPER FUNCTIONS (No changes) ---
+// --- WIDGET PROPS ---
+interface WeatherWidgetProps {
+  city: string;
+  startDate: string;
+  endDate: string;
+  // Callback to send data back to parent
+  onDataFetched: (data: ApiData) => void;
+}
+
+// --- HELPER FUNCTIONS ---
 const getWeatherIcon = (code: number) => {
   if ([0, 1].includes(code)) return <WbSunny sx={{ color: "#f9a825" }} />;
   if ([2].includes(code)) return <Cloud sx={{ color: "#90a4ae" }} />;
-  // ... (rest of the function is the same)
+  if ([3].includes(code)) return <Cloud sx={{ color: "#546e7a" }} />;
+  if ([45, 48].includes(code)) return <FilterDrama sx={{ color: "#b0bec5" }} />;
+  if ([51, 53, 55, 61, 63, 65, 80, 81, 82].includes(code))
+    return <Grain sx={{ color: "#42a5f5" }} />;
+  if ([71, 73, 75, 85, 86].includes(code))
+    return <AcUnit sx={{ color: "#81d4fa" }} />;
   if ([95, 96, 99].includes(code))
     return <Thunderstorm sx={{ color: "#212121" }} />;
   return <WbSunny sx={{ color: "#f9a825" }} />;
@@ -64,14 +66,10 @@ const formatDay = (dateString: string) => {
   return format(new Date(`${dateString}T12:00:00`), "MMM d");
 };
 
-// --- NEW TIMEZONE DISPLAY COMPONENT ---
-// A small component to neatly display the time
 const TimezoneDisplay: React.FC<{ timezoneData: TimezoneData }> = ({
   timezoneData,
 }) => {
-  // Get the local time of the destination
   const destinationTime = format(new Date(timezoneData.datetime), "h:mm aa");
-  // Get the user's current local time
   const localTime = format(new Date(), "h:mm aa");
 
   return (
@@ -105,69 +103,69 @@ const TimezoneDisplay: React.FC<{ timezoneData: TimezoneData }> = ({
   );
 };
 
-// --- MAIN WIDGET COMPONENT ---
+// --- MAIN COMPONENT ---
 const WeatherWidget: React.FC<WeatherWidgetProps> = ({
   city,
   startDate,
   endDate,
+  onDataFetched,
 }) => {
-  // State is updated to use the new ApiData interface
   const [data, setData] = useState<ApiData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [error, setError] = useState<string | null>(null); // ✅ Fixed typing
 
   useEffect(() => {
-    const fetchWeatherAndTime = async () => {
-      const apiStartDate = format(new Date(startDate), "yyyy-MM-dd");
-      const apiEndDate = format(new Date(endDate), "yyyy-MM-dd");
+    const fetchWeather = async () => {
+      if (!city || !startDate || !endDate) return;
 
       setLoading(true);
-      setError("");
+      setError(null);
       try {
-        // The API response is now typed to ApiData
         const response = await axios.get<ApiData>("/api/weather", {
-          params: { city, startDate: apiStartDate, endDate: apiEndDate },
+          params: { city, startDate, endDate },
         });
-        // Set the combined data object in state
+
+        // 1️⃣ Save local data
         setData(response.data);
+
+        // 2️⃣ Send back to parent
+        onDataFetched(response.data);
       } catch (err: any) {
-        setError(
-          err.response?.data?.message || "Could not fetch weather data."
-        );
+        console.error("Weather API error:", err);
+        setError("Could not load weather data."); // ✅ Works now
       } finally {
         setLoading(false);
       }
     };
 
-    fetchWeatherAndTime();
-  }, [city, startDate, endDate]); // Dependency array is unchanged
+    fetchWeather();
+  }, [city, startDate, endDate, onDataFetched]);
 
-  // Loading and Error states are unchanged
+  // --- UI States ---
   if (loading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" p={2}>
-        <CircularProgress size={24} />
-        <Typography sx={{ ml: 2 }}>Loading forecast & time...</Typography>
+      <Box display="flex" alignItems="center" gap={2}>
+        <CircularProgress size={20} />
+        <Typography variant="body2" color="text.secondary">
+          Loading forecast & time...
+        </Typography>
       </Box>
     );
   }
 
-  if (error) {
-    return <Alert severity="error">{error}</Alert>;
+  if (error || !data) {
+    return (
+      <Alert severity="error">{error || "Server error fetching data"}</Alert>
+    );
   }
 
-  // Check for 'data' instead of 'weather'
-  if (!data) {
-    return null;
-  }
-
-  // --- UPDATED JSX ---
+  // --- MAIN RENDER ---
   return (
     <Box>
-      {/* 1. Timezone Display (New) */}
+      {/* Timezone Display */}
       <TimezoneDisplay timezoneData={data.timezone} />
 
-      {/* 2. Weather Forecast (Updated) */}
+      {/* Weather Forecast */}
       <Typography variant="h6" gutterBottom sx={{ mt: 4 }}>
         Weather Forecast for {city}
       </Typography>
@@ -184,12 +182,20 @@ const WeatherWidget: React.FC<WeatherWidgetProps> = ({
           },
         }}
       >
-        {/* Access 'data.weather' instead of just 'weather' */}
         {data.weather.time.map((day, index) => (
-          <Paper
+          <Box
             key={day}
-            elevation={2}
-            sx={{ p: 2, minWidth: 120, textAlign: "center", flexShrink: 0 }}
+            component={ListItem}
+            sx={{
+              display: "inline-flex",
+              flexDirection: "column",
+              p: 2,
+              minWidth: 120,
+              textAlign: "center",
+              flexShrink: 0,
+              border: "1px solid #e0e0e0",
+              borderRadius: 1,
+            }}
           >
             <Typography variant="subtitle1" fontWeight="bold">
               {formatDay(day)}
@@ -201,7 +207,7 @@ const WeatherWidget: React.FC<WeatherWidgetProps> = ({
             <Typography variant="body2" color="text.secondary">
               {Math.round(data.weather.temperature_2m_min[index])}°
             </Typography>
-          </Paper>
+          </Box>
         ))}
       </Box>
     </Box>

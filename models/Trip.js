@@ -1,8 +1,22 @@
 const mongoose = require("mongoose");
 
+// NEW: Sub-schema for packing list items
+const packingListItemSchema = new mongoose.Schema({
+  item: {
+    type: String,
+    required: true,
+    trim: true,
+  },
+  packed: {
+    type: Boolean,
+    default: false,
+  },
+});
+
 const tripSchema = new mongoose.Schema(
   {
-    title: {
+    // UPDATED: Changed 'title' to 'name' to match frontend code
+    name: {
       type: String,
       required: true,
       trim: true,
@@ -77,6 +91,8 @@ const tripSchema = new mongoose.Schema(
       },
     ],
     notes: String,
+    // NEW: Added packingList
+    packingList: [packingListItemSchema],
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",

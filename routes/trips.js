@@ -66,7 +66,8 @@ router.post(
   "/",
   auth,
   [
-    body("title").notEmpty().withMessage("Title is required"),
+    // UPDATED: Changed 'title' to 'name' to match frontend
+    body("name").notEmpty().withMessage("Name is required"),
     body("destination.country").notEmpty().withMessage("Country is required"),
     body("destination.city").notEmpty().withMessage("City is required"),
     body("startDate").isISO8601().withMessage("Valid start date is required"),
@@ -159,7 +160,7 @@ router.get("/:id/itineraries", auth, async (req, res) => {
     });
 
     if (!trip) {
-      return res.status(404).json({ message: "Trip not found" });
+      return res.status(4404).json({ message: "Trip not found" });
     }
 
     const itineraries = await Itinerary.find({ tripId: req.params.id }).sort({
@@ -212,6 +213,116 @@ router.get("/stats/summary", auth, async (req, res) => {
     res.json(result);
   } catch (error) {
     console.error("Get stats error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// --- NEW PACKING LIST ROUTES ---
+
+// @route   POST /api/trips/:id/packing-list
+// @desc    Add a packing list item to a trip
+// @access  Private
+router.post(
+  "/:id/packing-list",
+  auth,
+  [body("item").notEmpty().withMessage("Item name is required")],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    try {
+      const trip = await Trip.findOne({
+        _id: req.params.id,
+        createdBy: req.user.id,
+      });
+
+      if (!trip) {
+        return res.status(404).json({ message: "Trip not found" });
+      }
+
+      const newItem = {
+        item: req.body.item,
+        packed: false,
+      };
+
+      trip.packingList.push(newItem);
+      await trip.save();
+
+      // Return the newly created item (it now has an _id)
+      res.status(201).json(trip.packingList[trip.packingList.length - 1]);
+    } catch (error) {
+      console.error("Add packing item error:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  }
+);
+
+// @route   PUT /api/trips/:id/packing-list/:itemId
+// @desc    Update a packing list item (e.g., toggle packed)
+// @access  Private
+router.put(
+  "/:id/packing-list/:itemId",
+  auth,
+  [body("packed").isBoolean().withMessage("Packed status must be a boolean")],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    try {
+      const trip = await Trip.findOne({
+        _id: req.params.id,
+        createdBy: req.user.id,
+      });
+
+      if (!trip) {
+        return res.status(404).json({ message: "Trip not found" });
+      }
+
+      const item = trip.packingList.id(req.params.itemId);
+      if (!item) {
+        return res.status(404).json({ message: "Packing item not found" });
+      }
+
+      item.packed = req.body.packed;
+      await trip.save();
+      res.json(item);
+    } catch (error) {
+      console.error("Update packing item error:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  }
+);
+
+// @route   DELETE /api/trips/:id/packing-list/:itemId
+// @desc    Delete a packing list item
+// @access  Private
+router.delete("/:id/packing-list/:itemId", auth, async (req, res) => {
+  try {
+    const trip = await Trip.findOne({
+      _id: req.params.id,
+      createdBy: req.user.id,
+    });
+
+    if (!trip) {
+      return res.status(404).json({ message: "Trip not found" });
+    }
+
+    const item = trip.packingList.id(req.params.itemId);
+    if (!item) {
+      return res.status(404).json({ message: "Packing item not found" });
+    }
+
+    // Use .pull() to remove the sub-document
+    trip.packingList.pull(req.params.itemId);
+    await trip.save();
+
+    res.json({ message: "Item removed" });
+  } catch (error) {
+    console.error("Delete packing item error:", error);
     res.status(500).json({ message: "Server error" });
   }
 });
