@@ -11,19 +11,19 @@ interface User {
   id: string;
   name: string;
   email: string;
-  avatar: string;
-  preferences: {
-    currency: string;
-    language: string;
-    notifications: {
-      email: boolean;
-      push: boolean;
+  avatar?: string;
+  preferences?: {
+    currency?: string;
+    language?: string;
+    notifications?: {
+      email?: boolean;
+      push?: boolean;
     };
   };
-  travelStats: {
-    countriesVisited: string[];
-    totalTrips: number;
-    totalDaysTraveled: number;
+  travelStats?: {
+    countriesVisited?: string[];
+    totalTrips?: number;
+    totalDaysTraveled?: number;
   };
 }
 
@@ -40,9 +40,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
+  if (!context) throw new Error("useAuth must be used within AuthProvider");
   return context;
 };
 
@@ -57,16 +55,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   );
   const [loading, setLoading] = useState(true);
 
-  // Set up axios defaults
   useEffect(() => {
-    if (token) {
+    if (token)
       axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-    } else {
-      delete axios.defaults.headers.common["Authorization"];
-    }
+    else delete axios.defaults.headers.common["Authorization"];
   }, [token]);
 
-  // Check for existing token on app load
   useEffect(() => {
     const checkAuth = async () => {
       const storedToken = localStorage.getItem("token");
@@ -76,16 +70,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             "Authorization"
           ] = `Bearer ${storedToken}`;
           const response = await axios.get("/api/auth/profile");
-          setUser(response.data);
+          setUser(response.data.user || response.data); // fallback
           setToken(storedToken);
-        } catch (error) {
+        } catch {
           localStorage.removeItem("token");
           setToken(null);
+          setUser(null);
         }
       }
       setLoading(false);
     };
-
     checkAuth();
   }, []);
 
@@ -94,12 +88,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const response = await axios.post("/api/auth/login", { email, password });
       const { token: newToken, user: userData } = response.data;
 
+      if (!newToken || !userData)
+        throw new Error("Invalid response from server");
+
       localStorage.setItem("token", newToken);
       setToken(newToken);
       setUser(userData);
       axios.defaults.headers.common["Authorization"] = `Bearer ${newToken}`;
     } catch (error: any) {
-      throw new Error(error.response?.data?.message || "Login failed");
+      const msg =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        error.message ||
+        "Login failed. Try again.";
+      throw new Error(msg);
     }
   };
 
@@ -112,12 +114,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       });
       const { token: newToken, user: userData } = response.data;
 
+      if (!newToken || !userData)
+        throw new Error("Invalid response from server");
+
       localStorage.setItem("token", newToken);
       setToken(newToken);
       setUser(userData);
       axios.defaults.headers.common["Authorization"] = `Bearer ${newToken}`;
     } catch (error: any) {
-      throw new Error(error.response?.data?.message || "Registration failed");
+      const msg =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        error.message ||
+        "Registration failed. Try again.";
+      throw new Error(msg);
     }
   };
 
@@ -128,14 +138,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     delete axios.defaults.headers.common["Authorization"];
   };
 
-  const value: AuthContextType = {
-    user,
-    token,
-    login,
-    register,
-    logout,
-    loading,
-  };
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider
+      value={{ user, token, login, register, logout, loading }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
 };

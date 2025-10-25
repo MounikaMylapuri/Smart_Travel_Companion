@@ -8,7 +8,7 @@ import {
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import { AuthProvider } from "./contexts/AuthContext";
-import { TripProvider } from "./contexts/TripContext";
+import { TripProvider, useTrip } from "./contexts/TripContext";
 import Navbar from "./components/Navbar";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -21,29 +21,67 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import "./App.css";
 
 const theme = createTheme({
-  palette: {
-    primary: {
-      main: "#1976d2",
-      light: "#42a5f5",
-      dark: "#1565c0",
-    },
-    secondary: {
-      main: "#dc004e",
-    },
-    background: {
-      default: "#f5f5f5",
-    },
-  },
-  typography: {
-    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
-    h4: {
-      fontWeight: 600,
-    },
-    h5: {
-      fontWeight: 500,
-    },
-  },
+  palette: { primary: { main: "#1976d2" }, secondary: { main: "#dc004e" } },
 });
+
+function AppRoutes() {
+  const { trips, currentTrip } = useTrip();
+
+  return (
+    <Routes>
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute>
+            {/* This is correct: Dashboard needs the primary currentTrip */}
+            {currentTrip && <Dashboard currentTrip={currentTrip} />}
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/trips"
+        element={
+          <ProtectedRoute>
+            {/* This is correct: TripList needs all trips */}
+            <TripList filteredTrips={trips} />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/trips/:id"
+        element={
+          <ProtectedRoute>
+            {/*
+              This is also correct. TripDetail (your selected file) 
+              fetches its own data based on the URL :id, 
+              so it does not need props.
+            */}
+            <TripDetail />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/create-trip"
+        element={
+          <ProtectedRoute>
+            <CreateTrip />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/profile"
+        element={
+          <ProtectedRoute>
+            <Profile />
+          </ProtectedRoute>
+        }
+      />
+    </Routes>
+  );
+}
 
 function App() {
   return (
@@ -52,57 +90,8 @@ function App() {
       <AuthProvider>
         <TripProvider>
           <Router>
-            <div className="App">
-              <Navbar />
-              <Routes>
-                <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
-                <Route
-                  path="/"
-                  element={<Navigate to="/dashboard" replace />}
-                />
-                <Route
-                  path="/dashboard"
-                  element={
-                    <ProtectedRoute>
-                      <Dashboard />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/trips"
-                  element={
-                    <ProtectedRoute>
-                      <TripList />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/trips/:id"
-                  element={
-                    <ProtectedRoute>
-                      <TripDetail />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/create-trip"
-                  element={
-                    <ProtectedRoute>
-                      <CreateTrip />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/profile"
-                  element={
-                    <ProtectedRoute>
-                      <Profile />
-                    </ProtectedRoute>
-                  }
-                />
-              </Routes>
-            </div>
+            <Navbar />
+            <AppRoutes />
           </Router>
         </TripProvider>
       </AuthProvider>
