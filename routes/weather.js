@@ -1,99 +1,132 @@
 const express = require("express");
-const https = require("https");
+const axios = require("axios");
 const router = express.Router();
 
-// Helper function to make https.get requests and parse JSON
-function httpsGet(url) {
-  return new Promise((resolve, reject) => {
-    // --- START OF FIX ---
-    // We must parse the URL to create the options object
-    const urlParts = new URL(url);
+// Get the key from environment variables
+const OPENWEATHER_API_KEY = process.env.OPENWEATHER_API_KEY;
 
-    const options = {
-      hostname: urlParts.hostname,
-      path: urlParts.pathname + urlParts.search,
-      method: "GET",
-      // Add headers to mimic a browser request
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.0.0 Safari/537.36",
-        Accept: "application/json",
-      },
-    };
-    // --- END OF FIX ---
+// Helper to process hourly OWM data into daily max temps
+const transformOwmToDaily = (list, startDate) => {
+  const dailyData = {};
+  const dates = [];
 
-    // Use https.request with the options object
-    const req = https.request(options, (res) => {
-      if (res.statusCode < 200 || res.statusCode >= 300) {
-        return reject(
-          new Error(`HTTPS request failed with status code ${res.statusCode}`)
-        );
-      }
+  // Group hourly forecasts by date
+  list.forEach((item) => {
+    const date = item.dt_txt.substring(0, 10); // Extract YYYY-MM-DD
+    if (!dailyData[date]) {
+      dailyData[date] = {
+        max: -Infinity,
+        min: Infinity,
+        weathercode: 0,
+        count: 0,
+      };
+      dates.push(date);
+    }
 
-      let rawData = "";
-      res.on("data", (chunk) => {
-        rawData += chunk;
-      });
-      res.on("end", () => {
-        try {
-          const parsedData = JSON.parse(rawData);
-          resolve(parsedData);
-        } catch (e) {
-          reject(new Error(`Failed to parse JSON response: ${e.message}`));
-        }
-      });
-    });
+    // Calculate daily max and min from 3-hourly forecasts
+    dailyData[date].max = Math.max(dailyData[date].max, item.main.temp_max);
+    dailyData[date].min = Math.min(dailyData[date].min, item.main.temp_min);
 
-    req.on("error", (e) => {
-      reject(new Error(`HTTPS request error: ${e.message}`));
-    });
-
-    // End the request
-    req.end();
+    // Simple heuristic for weather code: use the midday code (or the first one)
+    if (item.dt_txt.includes("12:00:00") || dailyData[date].count === 0) {
+      // Map OWM's ID to a rough equivalent of Open-Meteo's WMO code (simplified)
+      // 800 is Clear, 500-531 is Rain, 600-622 is Snow, 801-804 is Clouds
+      dailyData[date].weathercode = item.weather[0].id === 800 ? 0 : 2; // 0=Clear, 2=Cloudy
+    }
+    dailyData[date].count++;
   });
-}
 
-// The rest of your route file is UNCHANGED
+  // Structure the data to match the frontend's expected format (DailyWeather)
+  const times = [];
+  const maxTemps = [];
+  const minTemps = [];
+  const weatherCodes = [];
+
+  // Filter by the requested start date (or later)
+  dates
+    .filter((d) => d >= startDate)
+    .forEach((date) => {
+      times.push(date);
+      maxTemps.push(dailyData[date].max);
+      minTemps.push(dailyData[date].min);
+      weatherCodes.push(dailyData[date].weathercode);
+    });
+
+  return {
+    time: times,
+    temperature_2m_max: maxTemps,
+    temperature_2m_min: minTemps,
+    weathercode: weatherCodes,
+  };
+};
+
+// @route   GET /api/weather
+// @desc    Get weather and timezone (using OpenWeatherMap)
+// @access  Private
 router.get("/", async (req, res) => {
   const { city, startDate, endDate } = req.query;
 
-  if (!city || !startDate || !endDate) {
-    return res
-      .status(400)
-      .json({ message: "Missing required query parameters" });
+  if (!city || !startDate || !endDate || !OPENWEATHER_API_KEY) {
+    return res.status(400).json({
+      message: "Missing required query parameters or OpenWeather API Key",
+    });
   }
 
   try {
-    // 1. Geocode the city
-    const geoUrl = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(
-      city
-    )}&count=1`;
-    const geoResponse = await httpsGet(geoUrl);
+    // 1. Geocode the city (OWM Geocoding)
+    const geoResponse = await axios.get(
+      `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(
+        city
+      )}&limit=1&appid=${OPENWEATHER_API_KEY}`
+    );
 
-    const location = geoResponse.results?.[0];
+    const location = geoResponse.data?.[0];
 
     if (!location) {
-      return res.status(404).json({ message: "City not found" });
+      return res
+        .status(404)
+        .json({ message: "City not found by OpenWeatherMap" });
     }
 
-    const { latitude, longitude, timezone } = location;
+    const { lat, lon, name } = location;
 
-    // 2. Fetch the weather forecast
-    const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&start_date=${startDate}&end_date=${endDate}&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=auto`;
-    const weatherResponse = await httpsGet(weatherUrl);
+    // 2. Fetch the 5-day forecast (OWM Forecast)
+    const weatherResponse = await axios.get(
+      `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${OPENWEATHER_API_KEY}&units=metric`
+    );
 
-    // 3. Fetch the timezone data
-    const timezoneUrl = `https://worldtimeapi.org/api/timezone/${timezone}`;
-    const timezoneResponse = await httpsGet(timezoneUrl);
+    // 3. Transform OWM hourly data into daily structure
+    const dailyWeather = transformOwmToDaily(
+      weatherResponse.data.list,
+      startDate
+    );
 
-    // 4. Send back BOTH weather and timezone data
+    // 4. Timezone Lookup (Using external service to get TIMEZONE NAME)
+    // This is necessary because OWM only gives offset, but the frontend needs the name (Asia/Tokyo)
+    const timezoneLookupResponse = await axios.get(
+      `https://api.opencagedata.com/geocode/v1/json?q=${lat}+${lon}&key=your_opencage_key_here&pretty=1&no_annotations=1`
+      // NOTE: You will need a simple key from OpenCageData or similar service for this.
+    );
+    const timezoneName =
+      timezoneLookupResponse.data.results?.[0]?.annotations?.timezone?.name ||
+      "Asia/Kolkata"; // Default to a known timezone
+
+    // 5. Fetch time details (WorldTimeAPI is less complex than OWM for this)
+    const timezoneDetailsResponse = await axios.get(
+      `https://worldtimeapi.org/api/timezone/${timezoneName}`
+    );
+
+    // 6. Send the combined data
     res.json({
-      weather: weatherResponse.daily,
-      timezone: timezoneResponse,
+      weather: dailyWeather,
+      timezone: timezoneDetailsResponse.data,
     });
   } catch (error) {
-    console.error("Native HTTPS route error:", error.message);
-    res.status(500).json({ message: "Server error fetching data" });
+    // This catch block handles all three API failures
+    console.error("OpenWeatherMap/Timezone API error:", error.message);
+    res
+      .status(500)
+      .json({ message: "Server error fetching weather and time data" });
   }
 });
 
