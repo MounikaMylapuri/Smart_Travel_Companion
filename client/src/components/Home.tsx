@@ -18,7 +18,8 @@ import { useNavigate } from "react-router-dom";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
 import { styled } from "@mui/material/styles";
-// Sample data
+
+// Sample data for attractions
 const attractions = [
   {
     id: 1,
@@ -46,17 +47,20 @@ const attractions = [
   },
 ];
 
+// Sample data for travel diaries
 const travelDiaries = [
   {
     id: 1,
-    title: "Ukhimath to Madhmaheshwar",
+    title:
+      "Ukhimath to Madhmaheshwar: A journey through Himalayan Pradeshes hidden gems",
     image:
       "https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?auto=format&fit=crop&w=500&q=60",
     category: "Adventure/Nature",
   },
   {
     id: 2,
-    title: "8 hours in Guwahati",
+    title:
+      "8 hours in Guwahati - The spiritual significance of this Kamrupas trip",
     image:
       "https://images.unsplash.com/photo-1623776025811-fd139155a39b?auto=format&fit=crop&w=500&q=60",
     category: "Spiritual",
@@ -70,13 +74,15 @@ const travelDiaries = [
   },
   {
     id: 4,
-    title: "Chandigarh's shopping experience",
+    title:
+      "Chandigarh's shopping experience: Exploring the charms of retail therapy",
     image:
       "https://images.unsplash.com/photo-1506806732259-39c2d0268443?auto=format&fit=crop&w=500&q=60",
     category: "Shopping",
   },
 ];
 
+// Sample data for trip cards
 const tripCards = [
   {
     id: 1,
@@ -92,7 +98,7 @@ const tripCards = [
     id: 2,
     city: "Jalandhar",
     days: 2,
-    title: "Jalandhar: cultural significance",
+    title: "Jalandhar: cultural significance through",
     image:
       "https://images.unsplash.com/photo-1588416499018-d8c621e4d1c5?auto=format&fit=crop&w=500&q=60",
     region: "North",
@@ -102,7 +108,7 @@ const tripCards = [
     id: 3,
     city: "Ayodhya",
     days: 2,
-    title: "A spiritual getaway",
+    title: "A spiritual getaway in Ayodhya",
     image:
       "https://images.unsplash.com/photo-1623776025811-fd139155a39b?auto=format&fit=crop&w=500&q=60",
     region: "North",
@@ -112,7 +118,7 @@ const tripCards = [
     id: 4,
     city: "Tirupati",
     days: 2,
-    title: "Land of beauty and divinity",
+    title: "A land of beauty and spiritual divinity",
     image:
       "https://images.unsplash.com/photo-1621831714462-bec401ecbbfa?auto=format&fit=crop&w=500&q=60",
     region: "South",
@@ -130,7 +136,7 @@ const tripCards = [
   },
 ];
 
-// Styled Components
+// Styled components
 const HeroSection = styled(Box)(({ theme }) => ({
   backgroundImage:
     "url(https://images.unsplash.com/photo-1587474260584-136574528ed5?auto=format&fit=crop&w=1000&q=60)",
@@ -150,7 +156,7 @@ const HeroSection = styled(Box)(({ theme }) => ({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: "rgba(0,0,0,0.4)",
+    backgroundColor: "rgba(0, 0, 0, 0.4)",
   },
 }));
 
@@ -184,6 +190,18 @@ const Home: React.FC = () => {
   const [interest, setInterest] = React.useState("");
   const [tripLength, setTripLength] = React.useState("");
 
+  const handleRegionChange = (event: SelectChangeEvent) => {
+    setRegion(event.target.value as string);
+  };
+
+  const handleInterestChange = (event: SelectChangeEvent) => {
+    setInterest(event.target.value as string);
+  };
+
+  const handleTripLengthChange = (event: SelectChangeEvent) => {
+    setTripLength(event.target.value as string);
+  };
+
   return (
     <Box>
       {/* Hero Section */}
@@ -197,20 +215,52 @@ const Home: React.FC = () => {
             color="error"
             size="large"
             onClick={() => navigate("/create-trip")}
+            sx={{
+              mt: 2,
+              px: 4,
+              py: 1.5,
+              fontSize: "1.1rem",
+              fontWeight: "bold",
+              borderRadius: "50px",
+              boxShadow: "0 4px 14px rgba(0,0,0,0.3)",
+              transition: "all 0.3s ease-in-out",
+              "&:hover": {
+                transform: "translateY(-2px)",
+                boxShadow: "0 6px 20px rgba(0,0,0,0.4)",
+              },
+            }}
           >
             Discover more
           </Button>
         </Box>
         <Box sx={{ position: "absolute", left: 20, top: "50%", zIndex: 2 }}>
           <IconButton
-            sx={{ backgroundColor: "rgba(255,255,255,0.3)", color: "white" }}
+            sx={{
+              backgroundColor: "rgba(255,255,255,0.3)",
+              color: "white",
+              backdropFilter: "blur(10px)",
+              transition: "all 0.3s ease-in-out",
+              "&:hover": {
+                backgroundColor: "rgba(255,255,255,0.5)",
+                transform: "scale(1.1)",
+              },
+            }}
           >
             <ArrowBackIosNewIcon />
           </IconButton>
         </Box>
         <Box sx={{ position: "absolute", right: 20, top: "50%", zIndex: 2 }}>
           <IconButton
-            sx={{ backgroundColor: "rgba(255,255,255,0.3)", color: "white" }}
+            sx={{
+              backgroundColor: "rgba(255,255,255,0.3)",
+              color: "white",
+              backdropFilter: "blur(10px)",
+              transition: "all 0.3s ease-in-out",
+              "&:hover": {
+                backgroundColor: "rgba(255,255,255,0.5)",
+                transform: "scale(1.1)",
+              },
+            }}
           >
             <ArrowForwardIosIcon />
           </IconButton>
@@ -223,9 +273,10 @@ const Home: React.FC = () => {
         <SectionSubtitle variant="subtitle1">
           — worth a thousand stories —
         </SectionSubtitle>
+
         <Grid container spacing={3}>
           {attractions.map((attraction) => (
-            <Grid xs={12} sm={6} md={3} key={attraction.id}>
+            <Grid item xs={12} sm={6} md={3} key={attraction.id}>
               <Card
                 sx={{
                   height: "100%",
@@ -234,6 +285,12 @@ const Home: React.FC = () => {
                   borderRadius: 4,
                   overflow: "hidden",
                   boxShadow: 3,
+                  transition:
+                    "transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out",
+                  "&:hover": {
+                    transform: "translateY(-8px)",
+                    boxShadow: 6,
+                  },
                 }}
               >
                 <CardMedia
@@ -241,6 +298,12 @@ const Home: React.FC = () => {
                   height="200"
                   image={attraction.image}
                   alt={attraction.name}
+                  sx={{
+                    transition: "transform 0.3s ease-in-out",
+                    "&:hover": {
+                      transform: "scale(1.05)",
+                    },
+                  }}
                 />
                 <CardContent sx={{ flexGrow: 1, textAlign: "center" }}>
                   <Typography variant="h6">{attraction.name}</Typography>
@@ -249,6 +312,29 @@ const Home: React.FC = () => {
             </Grid>
           ))}
         </Grid>
+
+        <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
+          <Button
+            variant="contained"
+            color="error"
+            onClick={() => navigate("/attractions")}
+            sx={{
+              px: 4,
+              py: 1.5,
+              fontSize: "1rem",
+              fontWeight: "bold",
+              borderRadius: "50px",
+              boxShadow: "0 4px 14px rgba(0,0,0,0.2)",
+              transition: "all 0.3s ease-in-out",
+              "&:hover": {
+                transform: "translateY(-2px)",
+                boxShadow: "0 6px 20px rgba(0,0,0,0.3)",
+              },
+            }}
+          >
+            Discover more
+          </Button>
+        </Box>
       </Container>
 
       {/* Travel Diaries Section */}
@@ -258,9 +344,46 @@ const Home: React.FC = () => {
           <SectionSubtitle variant="subtitle1">
             — for every passion —
           </SectionSubtitle>
+
+          <Box sx={{ display: "flex", justifyContent: "center", mb: 4 }}>
+            <FormControl sx={{ minWidth: 200, mx: 1 }}>
+              <Select
+                value={interest}
+                onChange={handleInterestChange}
+                displayEmpty
+                sx={{ backgroundColor: "white" }}
+              >
+                <MenuItem value="">
+                  <em>Interests</em>
+                </MenuItem>
+                <MenuItem value="Nature">Nature</MenuItem>
+                <MenuItem value="Culture">Culture</MenuItem>
+                <MenuItem value="Spiritual">Spiritual</MenuItem>
+                <MenuItem value="Shopping">Shopping</MenuItem>
+              </Select>
+            </FormControl>
+
+            <FormControl sx={{ minWidth: 200, mx: 1 }}>
+              <Select
+                value={region}
+                onChange={handleRegionChange}
+                displayEmpty
+                sx={{ backgroundColor: "white" }}
+              >
+                <MenuItem value="">
+                  <em>Regions</em>
+                </MenuItem>
+                <MenuItem value="North">North</MenuItem>
+                <MenuItem value="South">South</MenuItem>
+                <MenuItem value="East">East</MenuItem>
+                <MenuItem value="West">West</MenuItem>
+              </Select>
+            </FormControl>
+          </Box>
+
           <Grid container spacing={3}>
             {travelDiaries.map((diary) => (
-              <Grid xs={12} sm={6} md={3} key={diary.id}>
+              <Grid item xs={12} sm={6} md={3} key={diary.id}>
                 <Card
                   sx={{
                     height: "100%",
@@ -269,6 +392,13 @@ const Home: React.FC = () => {
                     borderRadius: 2,
                     overflow: "hidden",
                     boxShadow: 3,
+                    transition:
+                      "transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out",
+                    cursor: "pointer",
+                    "&:hover": {
+                      transform: "translateY(-8px)",
+                      boxShadow: 6,
+                    },
                   }}
                 >
                   <Box sx={{ position: "relative" }}>
@@ -277,6 +407,12 @@ const Home: React.FC = () => {
                       height="200"
                       image={diary.image}
                       alt={diary.title}
+                      sx={{
+                        transition: "transform 0.3s ease-in-out",
+                        "&:hover": {
+                          transform: "scale(1.05)",
+                        },
+                      }}
                     />
                     <Box sx={{ position: "absolute", top: 10, left: 10 }}>
                       <CategoryTag>{diary.category}</CategoryTag>
@@ -298,14 +434,120 @@ const Home: React.FC = () => {
               </Grid>
             ))}
           </Grid>
+
+          <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
+            <Button
+              variant="contained"
+              color="error"
+              onClick={() => navigate("/diaries")}
+              sx={{
+                px: 4,
+                py: 1.5,
+                fontSize: "1rem",
+                fontWeight: "bold",
+                borderRadius: "50px",
+                boxShadow: "0 4px 14px rgba(0,0,0,0.2)",
+                transition: "all 0.3s ease-in-out",
+                "&:hover": {
+                  transform: "translateY(-2px)",
+                  boxShadow: "0 6px 20px rgba(0,0,0,0.3)",
+                },
+              }}
+            >
+              Discover more
+            </Button>
+          </Box>
         </Container>
       </Box>
 
       {/* Trip Cards Section */}
       <Container maxWidth="lg" sx={{ my: 8 }}>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            mb: 4,
+          }}
+        >
+          <Box>
+            <FormControl sx={{ minWidth: 120, mr: 2 }}>
+              <Select
+                value={region}
+                onChange={handleRegionChange}
+                displayEmpty
+                size="small"
+              >
+                <MenuItem value="">
+                  <em>Region</em>
+                </MenuItem>
+                <MenuItem value="North">North</MenuItem>
+                <MenuItem value="South">South</MenuItem>
+                <MenuItem value="East">East</MenuItem>
+                <MenuItem value="West">West</MenuItem>
+              </Select>
+            </FormControl>
+
+            <FormControl sx={{ minWidth: 120, mr: 2 }}>
+              <Select
+                value={interest}
+                onChange={handleInterestChange}
+                displayEmpty
+                size="small"
+              >
+                <MenuItem value="">
+                  <em>Interest</em>
+                </MenuItem>
+                <MenuItem value="Nature">Nature</MenuItem>
+                <MenuItem value="Culture">Culture</MenuItem>
+                <MenuItem value="Spiritual">Spiritual</MenuItem>
+                <MenuItem value="Shopping">Shopping</MenuItem>
+              </Select>
+            </FormControl>
+
+            <FormControl sx={{ minWidth: 120 }}>
+              <Select
+                value={tripLength}
+                onChange={handleTripLengthChange}
+                displayEmpty
+                size="small"
+              >
+                <MenuItem value="">
+                  <em>Trip Length</em>
+                </MenuItem>
+                <MenuItem value="1-3">1-3 Days</MenuItem>
+                <MenuItem value="4-7">4-7 Days</MenuItem>
+                <MenuItem value="8+">8+ Days</MenuItem>
+              </Select>
+            </FormControl>
+          </Box>
+
+          <Button
+            variant="contained"
+            color="error"
+            sx={{
+              borderRadius: "50px",
+              height: "100%",
+              px: 4,
+              py: 1.5,
+              fontSize: "1rem",
+              fontWeight: "bold",
+              boxShadow: "0 4px 14px rgba(0,0,0,0.2)",
+              transition: "all 0.3s ease-in-out",
+              "&:hover": {
+                transform: "translateY(-2px)",
+                boxShadow: "0 6px 20px rgba(0,0,0,0.3)",
+              },
+            }}
+            onClick={() => navigate("/create-trip")}
+          >
+            Book Your Travel
+          </Button>
+        </Box>
+
         <Grid container spacing={3}>
           {tripCards.map((trip) => (
-            <Grid xs={12} sm={6} md={3} lg={2} key={trip.id}>
+            <Grid item xs={12} sm={6} md={4} lg={2} key={trip.id}>
               <Card
                 sx={{
                   height: "100%",
@@ -315,6 +557,16 @@ const Home: React.FC = () => {
                   overflow: "hidden",
                   boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
                   position: "relative",
+                  transition:
+                    "transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out",
+                  cursor: "pointer",
+                  "&:hover": {
+                    transform: "translateY(-8px) scale(1.02)",
+                    boxShadow: "0 8px 24px rgba(0,0,0,0.2)",
+                    "& .card-image": {
+                      transform: "scale(1.1)",
+                    },
+                  },
                 }}
               >
                 <CardMedia
@@ -322,7 +574,12 @@ const Home: React.FC = () => {
                   height="200"
                   image={trip.image}
                   alt={trip.city}
-                  sx={{ height: "100%" }}
+                  className="card-image"
+                  sx={{
+                    height: "100%",
+                    transition: "transform 0.3s ease-in-out",
+                    objectFit: "cover",
+                  }}
                 />
                 <Box
                   sx={{

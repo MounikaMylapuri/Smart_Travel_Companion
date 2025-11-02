@@ -4,7 +4,6 @@ import {
   Typography,
   Button,
   Container,
-  Grid,
   Card,
   CardMedia,
   CardContent,
@@ -13,11 +12,13 @@ import {
   Select,
   MenuItem,
   SelectChangeEvent,
+  Grid, // <--- Corrected Import: Grid is imported here
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
 import { styled } from "@mui/material/styles";
+// The line 'import Grid from "@mui/material/Grid";' has been removed
 
 // Sample data for attractions
 const attractions = [
@@ -215,20 +216,52 @@ const Home: React.FC = () => {
             color="error"
             size="large"
             onClick={() => navigate("/create-trip")}
+            sx={{
+              mt: 2,
+              px: 4,
+              py: 1.5,
+              fontSize: "1.1rem",
+              fontWeight: "bold",
+              borderRadius: "50px",
+              boxShadow: "0 4px 14px rgba(0,0,0,0.3)",
+              transition: "all 0.3s ease-in-out",
+              "&:hover": {
+                transform: "translateY(-2px)",
+                boxShadow: "0 6px 20px rgba(0,0,0,0.4)",
+              },
+            }}
           >
             Discover more
           </Button>
         </Box>
         <Box sx={{ position: "absolute", left: 20, top: "50%", zIndex: 2 }}>
           <IconButton
-            sx={{ backgroundColor: "rgba(255,255,255,0.3)", color: "white" }}
+            sx={{
+              backgroundColor: "rgba(255,255,255,0.3)",
+              color: "white",
+              backdropFilter: "blur(10px)",
+              transition: "all 0.3s ease-in-out",
+              "&:hover": {
+                backgroundColor: "rgba(255,255,255,0.5)",
+                transform: "scale(1.1)",
+              },
+            }}
           >
             <ArrowBackIosNewIcon />
           </IconButton>
         </Box>
         <Box sx={{ position: "absolute", right: 20, top: "50%", zIndex: 2 }}>
           <IconButton
-            sx={{ backgroundColor: "rgba(255,255,255,0.3)", color: "white" }}
+            sx={{
+              backgroundColor: "rgba(255,255,255,0.3)",
+              color: "white",
+              backdropFilter: "blur(10px)",
+              transition: "all 0.3s ease-in-out",
+              "&:hover": {
+                backgroundColor: "rgba(255,255,255,0.5)",
+                transform: "scale(1.1)",
+              },
+            }}
           >
             <ArrowForwardIosIcon />
           </IconButton>
@@ -244,12 +277,7 @@ const Home: React.FC = () => {
 
         <Grid container spacing={3}>
           {attractions.map((attraction) => (
-            <Grid
-              xs={12}
-              sm={6}
-              md={3}
-              key={attraction.id}
-            >
+            <Grid item xs={12} sm={6} md={3} key={attraction.id}>
               <Card
                 sx={{
                   height: "100%",
@@ -258,6 +286,12 @@ const Home: React.FC = () => {
                   borderRadius: 4,
                   overflow: "hidden",
                   boxShadow: 3,
+                  transition:
+                    "transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out",
+                  "&:hover": {
+                    transform: "translateY(-8px)",
+                    boxShadow: 6,
+                  },
                 }}
               >
                 <CardMedia
@@ -265,6 +299,12 @@ const Home: React.FC = () => {
                   height="200"
                   image={attraction.image}
                   alt={attraction.name}
+                  sx={{
+                    transition: "transform 0.3s ease-in-out",
+                    "&:hover": {
+                      transform: "scale(1.05)",
+                    },
+                  }}
                 />
                 <CardContent sx={{ flexGrow: 1, textAlign: "center" }}>
                   <Typography variant="h6">{attraction.name}</Typography>
@@ -279,6 +319,19 @@ const Home: React.FC = () => {
             variant="contained"
             color="error"
             onClick={() => navigate("/attractions")}
+            sx={{
+              px: 4,
+              py: 1.5,
+              fontSize: "1rem",
+              fontWeight: "bold",
+              borderRadius: "50px",
+              boxShadow: "0 4px 14px rgba(0,0,0,0.2)",
+              transition: "all 0.3s ease-in-out",
+              "&:hover": {
+                transform: "translateY(-2px)",
+                boxShadow: "0 6px 20px rgba(0,0,0,0.3)",
+              },
+            }}
           >
             Discover more
           </Button>
@@ -331,7 +384,7 @@ const Home: React.FC = () => {
 
           <Grid container spacing={3}>
             {travelDiaries.map((diary) => (
-              <Grid xs={12} sm={6} md={3} key={diary.id}>
+              <Grid item xs={12} sm={6} md={3} key={diary.id}>
                 <Card
                   sx={{
                     height: "100%",
@@ -340,6 +393,13 @@ const Home: React.FC = () => {
                     borderRadius: 2,
                     overflow: "hidden",
                     boxShadow: 3,
+                    transition:
+                      "transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out",
+                    cursor: "pointer",
+                    "&:hover": {
+                      transform: "translateY(-8px)",
+                      boxShadow: 6,
+                    },
                   }}
                 >
                   <Box sx={{ position: "relative" }}>
@@ -348,6 +408,12 @@ const Home: React.FC = () => {
                       height="200"
                       image={diary.image}
                       alt={diary.title}
+                      sx={{
+                        transition: "transform 0.3s ease-in-out",
+                        "&:hover": {
+                          transform: "scale(1.05)",
+                        },
+                      }}
                     />
                     <Box sx={{ position: "absolute", top: 10, left: 10 }}>
                       <CategoryTag>{diary.category}</CategoryTag>
@@ -375,6 +441,19 @@ const Home: React.FC = () => {
               variant="contained"
               color="error"
               onClick={() => navigate("/diaries")}
+              sx={{
+                px: 4,
+                py: 1.5,
+                fontSize: "1rem",
+                fontWeight: "bold",
+                borderRadius: "50px",
+                boxShadow: "0 4px 14px rgba(0,0,0,0.2)",
+                transition: "all 0.3s ease-in-out",
+                "&:hover": {
+                  transform: "translateY(-2px)",
+                  boxShadow: "0 6px 20px rgba(0,0,0,0.3)",
+                },
+              }}
             >
               Discover more
             </Button>
@@ -447,7 +526,20 @@ const Home: React.FC = () => {
           <Button
             variant="contained"
             color="error"
-            sx={{ borderRadius: 0, height: "100%", px: 3 }}
+            sx={{
+              borderRadius: "50px",
+              height: "100%",
+              px: 4,
+              py: 1.5,
+              fontSize: "1rem",
+              fontWeight: "bold",
+              boxShadow: "0 4px 14px rgba(0,0,0,0.2)",
+              transition: "all 0.3s ease-in-out",
+              "&:hover": {
+                transform: "translateY(-2px)",
+                boxShadow: "0 6px 20px rgba(0,0,0,0.3)",
+              },
+            }}
             onClick={() => navigate("/create-trip")}
           >
             Book Your Travel
@@ -456,15 +548,7 @@ const Home: React.FC = () => {
 
         <Grid container spacing={3}>
           {tripCards.map((trip) => (
-            <Grid
-              component="div"
-              item
-              xs={12}
-              sm={6}
-              md={3}
-              lg={2}
-              key={trip.id}
-            >
+            <Grid item xs={12} sm={6} md={4} lg={2} key={trip.id}>
               <Card
                 sx={{
                   height: "100%",
@@ -474,6 +558,16 @@ const Home: React.FC = () => {
                   overflow: "hidden",
                   boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
                   position: "relative",
+                  transition:
+                    "transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out",
+                  cursor: "pointer",
+                  "&:hover": {
+                    transform: "translateY(-8px) scale(1.02)",
+                    boxShadow: "0 8px 24px rgba(0,0,0,0.2)",
+                    "& .card-image": {
+                      transform: "scale(1.1)",
+                    },
+                  },
                 }}
               >
                 <CardMedia
@@ -481,7 +575,12 @@ const Home: React.FC = () => {
                   height="200"
                   image={trip.image}
                   alt={trip.city}
-                  sx={{ height: "100%" }}
+                  className="card-image"
+                  sx={{
+                    height: "100%",
+                    transition: "transform 0.3s ease-in-out",
+                    objectFit: "cover",
+                  }}
                 />
                 <Box
                   sx={{

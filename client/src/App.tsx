@@ -17,9 +17,7 @@ import { TripProvider } from "./contexts/TripContext";
 // Components
 import Navbar from "./components/Navbar";
 import ProtectedRoute from "./components/ProtectedRoute";
-import Home from "./components/Home";
 
-// Pages
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
@@ -40,7 +38,6 @@ const App: React.FC = () => {
               <Routes>
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
-                <Route path="/" element={<Home />} />
 
                 <Route
                   path="/dashboard"

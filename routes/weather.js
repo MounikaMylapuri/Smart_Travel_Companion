@@ -15,7 +15,11 @@ router.get("/", async (req, res) => {
     console.log("🌦 Fetching weather for:", city);
     console.log("✅ Using API key:", apiKey?.slice(0, 6) + "...");
 
-    // Step 1: Geocoding
+    // Ensure API key is available
+    if (!apiKey)
+      return res.status(500).json({ error: "Server missing WEATHER_API_KEY" });
+
+    // Step 1: Geocoding (using OpenWeatherMap Geo API)
     const geoUrl = `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(
       city
     )}&limit=1&appid=${apiKey}`;
@@ -27,7 +31,7 @@ router.get("/", async (req, res) => {
 
     const { lat, lon } = geoData[0];
 
-    // Step 2: Forecast (free tier)
+    // Step 2: Forecast (5-day / 3-hour steps)
     const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
     const forecastResponse = await axios.get(forecastUrl);
     const forecastData = forecastResponse.data;
@@ -36,29 +40,53 @@ router.get("/", async (req, res) => {
       return res.status(500).json({ error: "Weather data unavailable" });
     }
 
-    // Step 3: Group by date → max temp/day
-    const grouped = {};
-    forecastData.list.forEach((item) => {
-      const day = item.dt_txt.split(" ")[0];
-      if (!grouped[day]) grouped[day] = [];
-      grouped[day].push(item.main.temp);
+    // 🛠️ Step 3: Correctly Group by date and calculate Daily Max/Min
+    const dailySummary = {};
+    let firstWeather = null;
+
+    forecastData.list.forEach((item, index) => {
+      const date = item.dt_txt.split(" ")[0]; // e.g., "2025-11-01"
+      const temp = item.main.temp;
+
+      // Capture the first weather entry for overall icon/description
+      if (index === 0) {
+        firstWeather = item.weather[0];
+      }
+
+      if (!dailySummary[date]) {
+        // Initialize for a new day
+        dailySummary[date] = {
+          max: temp,
+          min: temp,
+          // Store weather codes/descriptions for daily representation if needed
+          weather: item.weather[0],
+        };
+      } else {
+        // Update min/max for the existing day
+        dailySummary[date].max = Math.max(dailySummary[date].max, temp);
+        dailySummary[date].min = Math.min(dailySummary[date].min, temp);
+
+        // You might choose to update weather based on the 12:00:00 entry or the most extreme code
+        // For simplicity, we stick to the first entry's icon/desc for the overall summary.
+      }
     });
 
-    const temperature_2m_max = Object.values(grouped).map((temps) =>
-      Math.max(...temps)
-    );
-    const weathercode = forecastData.list.map((item) => item.weather[0].id);
+    const temperature_2m_max = Object.values(dailySummary).map((d) => d.max);
+    const temperature_2m_min = Object.values(dailySummary).map((d) => d.min);
+    const time = Object.keys(dailySummary);
 
-    // Get icon + description from first entry
-    const firstWeather = forecastData.list[0].weather[0];
+    // 🛠️ Step 4: Send Formatted Response with correct structure
     const weatherIcon = `https://openweathermap.org/img/wn/${firstWeather.icon}@2x.png`;
     const weatherDesc = firstWeather.description;
 
-    // Step 4: Send formatted response
     res.json({
       weather: {
-        temperature_2m_max,
-        weathercode,
+        time: time,
+        temperature_2m_max: temperature_2m_max,
+        temperature_2m_min: temperature_2m_min, // Added min temp
+        // Note: weathercode and daily icon would require more complex grouping logic.
+      },
+      summary: {
         icon: weatherIcon,
         description: weatherDesc,
       },
