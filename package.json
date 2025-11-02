@@ -1,8 +1,9 @@
 {
   "name": "smart-travel-companion",
   "version": "1.0.0",
-  "description": "A comprehensive travel companion application built with MERN stack",
+  "description": "A comprehensive travel companion application",
   "main": "server.js",
+  "type": "module",
   "scripts": {
     "start": "node server.js",
     "client": "npm run dev --prefix client",

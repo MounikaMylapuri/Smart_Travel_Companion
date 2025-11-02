@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 const itinerarySchema = new mongoose.Schema(
   {
@@ -85,4 +85,4 @@ const itinerarySchema = new mongoose.Schema(
 itinerarySchema.index({ tripId: 1, day: 1 });
 itinerarySchema.index({ date: 1 });
 
-module.exports = mongoose.model("Itinerary", itinerarySchema);
+export default mongoose.model("Itinerary", itinerarySchema);

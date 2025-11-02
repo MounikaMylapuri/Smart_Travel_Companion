@@ -1,11 +1,11 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 const Schema = mongoose.Schema;
 
 /**
  * @desc Schema for storing common phrases and their translations for travel.
  * Allows filtering by language and category.
  */
-const PhraseSchema = new Schema(
+const phraseSchema = new Schema(
   {
     language: {
       type: String,
@@ -46,4 +46,4 @@ const PhraseSchema = new Schema(
   }
 );
 
-module.exports = mongoose.model("Phrase", PhraseSchema);
+export default mongoose.model("Phrase", phraseSchema);

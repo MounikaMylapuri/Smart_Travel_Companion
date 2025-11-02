@@ -1,8 +1,9 @@
-const express = require("express");
-const { body, validationResult } = require("express-validator");
-const Trip = require("../models/Trip");
-const Itinerary = require("../models/Itinerary");
-const auth = require("../middleware/auth");
+import express from "express";
+import { body, validationResult } from "express-validator";
+import auth from "../middleware/auth.js";
+import Trip from "../models/Trip.js";
+import User from "../models/User.js";
+import Itinerary from "../models/Itinerary.js";
 
 const router = express.Router();
 
@@ -89,7 +90,7 @@ router.post(
       await trip.save();
 
       // Update user's travel stats
-      const User = require("../models/User");
+      // Using the User model already imported at the top of the file
       await User.findByIdAndUpdate(req.user.id, {
         $inc: { "travelStats.totalTrips": 1 },
         $addToSet: { "travelStats.countriesVisited": trip.destination.country },
@@ -327,4 +328,4 @@ router.delete("/:id/packing-list/:itemId", auth, async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

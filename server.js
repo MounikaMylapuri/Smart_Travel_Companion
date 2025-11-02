@@ -11,6 +11,11 @@ dotenv.config();
 import weatherRouter from "./routes/weather.js";
 import checklistRouter from "./routes/checklist.js";
 import authRouter from "./routes/auth.js";
+import tripsRouter from "./routes/trips.js";
+import itinerariesRouter from "./routes/itineraries.js";
+import landmarksRouter from "./routes/landmarks.js";
+import phrasesRouter from "./routes/phrases.js";
+import plannerRouter from "./routes/planner.js";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -50,6 +55,11 @@ app.use(express.json());
 app.use("/api/weather", weatherRouter);
 app.use("/api/checklist", checklistRouter);
 app.use("/api/auth", authRouter);
+app.use("/api/trips", tripsRouter);
+app.use("/api/itineraries", itinerariesRouter);
+app.use("/api/landmarks", landmarksRouter);
+app.use("/api/phrases", phrasesRouter);
+app.use("/api/planner", plannerRouter);
 
 // --- 4. Serve Static Assets (If in production) ---
 if (process.env.NODE_ENV === "production") {

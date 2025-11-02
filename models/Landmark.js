@@ -1,7 +1,7 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 const Schema = mongoose.Schema;
 
-const LandmarkSchema = new Schema({
+const landmarkSchema = new mongoose.Schema({
   city: {
     type: String,
     required: true,
@@ -33,4 +33,4 @@ const LandmarkSchema = new Schema({
   },
 });
 
-module.exports = mongoose.model("Landmark", LandmarkSchema);
+export default mongoose.model("Landmark", landmarkSchema);

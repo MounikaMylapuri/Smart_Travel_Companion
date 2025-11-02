@@ -1,7 +1,8 @@
-const express = require("express");
-const axios = require("axios");
+import express from "express";
+import axios from "axios";
+import Landmark from "../models/Landmark.js";
+
 const router = express.Router();
-const Landmark = require("../models/Landmark");
 
 // Ensure this key is available in your .env file
 const UNSPLASH_ACCESS_KEY = process.env.UNSPLASH_ACCESS_KEY;
@@ -164,4 +165,4 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

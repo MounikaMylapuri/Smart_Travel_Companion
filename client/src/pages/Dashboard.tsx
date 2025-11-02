@@ -11,17 +11,11 @@ import { useAuth } from "../contexts/AuthContext";
 import { useTrip } from "../contexts/TripContext";
 import { Trip } from "../types/trip"; // Import the Trip type
 
-// Define the props interface to accept `currentTrip`
-interface DashboardProps {
-  currentTrip: Trip;
-}
-
-// Add React.FC<DashboardProps> and destructure the currentTrip prop
-const Dashboard: React.FC<DashboardProps> = ({ currentTrip }) => {
+// Remove the props interface since we'll use context
+const Dashboard: React.FC = () => {
   const { user } = useAuth();
-  // The component receives `currentTrip` as a prop,
-  // but it also fetches all trips for stats. This is fine.
-  const { trips, fetchTrips, loading } = useTrip();
+  // Use the currentTrip from context instead of props
+  const { trips, fetchTrips, loading, currentTrip } = useTrip();
   const [stats, setStats] = useState({
     totalTrips: 0,
     completedTrips: 0,

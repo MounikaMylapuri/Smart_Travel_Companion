@@ -1,6 +1,7 @@
-const express = require("express");
+import express from "express";
+import Landmark from "../models/Landmark.js";
+
 const router = express.Router();
-const Landmark = require("../models/Landmark");
 
 // Helper function to calculate days between two YYYY-MM-DD dates
 const calculateDays = (start, end) => {
@@ -77,4 +78,4 @@ router.get("/", async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

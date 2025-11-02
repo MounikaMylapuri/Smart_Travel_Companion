@@ -92,12 +92,20 @@ const Navbar: React.FC = () => {
   };
 
   return (
-    <AppBar position="static" elevation={1}>
+    <AppBar 
+      position="static" 
+      elevation={0}
+      sx={{ 
+        background: 'linear-gradient(to right, #614E42, #80624D)',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
+      }}
+    >
       <Toolbar>
         <FlightTakeoff sx={{ mr: 2 }} />
         <Typography
           variant="h6"
           component="div"
+          fontWeight="bold"
           sx={{ flexGrow: 1, cursor: "pointer" }}
           onClick={() => navigate("/dashboard")}
         >

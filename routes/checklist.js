@@ -1,7 +1,58 @@
 import express from "express";
+import auth from "../middleware/auth.js";
+import ChecklistTemplate from "../models/ChecklistTemplate.js";
 import axios from "axios";
 
 const router = express.Router();
+
+// Route to generate a packing checklist based on destination and weather
+router.get("/", async (req, res) => {
+  const { city, country, avgTempMax, isRainy } = req.query;
+  
+  try {
+    // Find a template or use default items
+    let template = await ChecklistTemplate.findOne({
+      climate: avgTempMax > 25 ? "hot" : avgTempMax < 10 ? "cold" : "moderate"
+    });
+    
+    if (!template) {
+      // Create a default template if none exists
+      const items = [
+        { name: "Passport", category: "essentials", required: true },
+        { name: "Phone Charger", category: "essentials", required: true },
+        { name: "Medications", category: "essentials", required: true },
+        { name: "T-shirts", category: "clothing", required: true },
+        { name: "Pants/Shorts", category: "clothing", required: true },
+        { name: "Underwear", category: "clothing", required: true },
+        { name: "Socks", category: "clothing", required: true },
+        { name: "Toiletries", category: "personal", required: true },
+        { name: "First Aid Kit", category: "health", required: false }
+      ];
+      
+      // Add weather-specific items
+      if (isRainy === "true") {
+        items.push({ name: "Umbrella", category: "weather", required: true });
+        items.push({ name: "Rain Jacket", category: "clothing", required: true });
+      }
+      
+      if (avgTempMax > 25) {
+        items.push({ name: "Sunscreen", category: "health", required: true });
+        items.push({ name: "Sunglasses", category: "accessories", required: true });
+      } else if (avgTempMax < 10) {
+        items.push({ name: "Winter Coat", category: "clothing", required: true });
+        items.push({ name: "Gloves", category: "accessories", required: true });
+        items.push({ name: "Scarf", category: "accessories", required: true });
+      }
+      
+      return res.json(items);
+    }
+    
+    return res.json(template.items);
+  } catch (error) {
+    console.error("Error generating checklist:", error);
+    return res.status(500).json({ message: "Failed to generate packing list" });
+  }
+});
 
 // ✅ Get keys from environment variables
 const OPENWEATHER_API_KEY = process.env.OPENWEATHER_API_KEY;

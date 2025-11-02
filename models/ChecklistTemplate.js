@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 // --- 1. Define the Item Sub-Schema ---
 const itemSchema = new mongoose.Schema({
@@ -53,4 +53,5 @@ checklistTemplateSchema.index(
 );
 
 // --- 3. Export the Mongoose Model ---
-module.exports = mongoose.model("ChecklistTemplate", checklistTemplateSchema);
+
+export default mongoose.model("ChecklistTemplate", checklistTemplateSchema);

@@ -1,8 +1,8 @@
-const express = require("express");
-const { body, validationResult } = require("express-validator");
-const Itinerary = require("../models/Itinerary");
-const Trip = require("../models/Trip");
-const auth = require("../middleware/auth");
+import express from "express";
+import { body, validationResult } from "express-validator";
+import Itinerary from "../models/Itinerary.js";
+import Trip from "../models/Trip.js";
+import auth from "../middleware/auth.js";
 
 const router = express.Router();
 
@@ -227,4 +227,4 @@ router.delete("/:id/activities/:activityId", auth, async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

@@ -49,14 +49,56 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
         palette: {
           mode,
           primary: {
-            main: "#0288d1",
+            main: "#1976d2",
+            light: "#42a5f5",
+            dark: "#1565c0",
           },
+          secondary: {
+            main: "#ff9800",
+            light: "#ffb74d",
+            dark: "#f57c00",
+          },
+          ...(mode === "light"
+            ? {
+                background: {
+                  default: "#f5f5f5",
+                  paper: "#ffffff",
+                },
+              }
+            : {
+                background: {
+                  default: "#121212",
+                  paper: "#1e1e1e",
+                },
+              }),
           ...(mode === "dark" && {
             background: {
               default: "#121212",
               paper: "#1e1e1e",
             },
           }),
+        },
+        components: {
+          MuiButton: {
+            styleOverrides: {
+              root: {
+                borderRadius: 8,
+                textTransform: "none",
+                fontWeight: 500,
+              },
+            },
+          },
+          MuiCard: {
+            styleOverrides: {
+              root: {
+                borderRadius: 12,
+                boxShadow:
+                  mode === "light"
+                    ? "0px 2px 8px rgba(0, 0, 0, 0.1)"
+                    : "0px 2px 8px rgba(0, 0, 0, 0.3)",
+              },
+            },
+          },
         },
       }),
     [mode]

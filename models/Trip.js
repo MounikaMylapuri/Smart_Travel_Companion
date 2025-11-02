@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 // NEW: Sub-schema for packing list items
 const packingListItemSchema = new mongoose.Schema({
@@ -108,4 +108,4 @@ const tripSchema = new mongoose.Schema(
 tripSchema.index({ createdBy: 1, startDate: -1 });
 tripSchema.index({ destination: 1 });
 
-module.exports = mongoose.model("Trip", tripSchema);
+export default mongoose.model("Trip", tripSchema);

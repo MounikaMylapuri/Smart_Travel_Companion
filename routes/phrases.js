@@ -1,6 +1,7 @@
-const express = require("express");
+import express from "express";
+import Phrase from "../models/phrase.js"; // Assuming Phrase model is in ../models/phrase.js
+
 const router = express.Router();
-const Phrase = require("../models/phrase"); // Assuming Phrase model is in ../models/Phrase.js
 
 // @route   GET /api/phrases
 // @desc    Fetch common phrases, filterable by language and category.
@@ -81,4 +82,4 @@ router.post("/", async (req, res) => {
 
 // The usual PUT and DELETE admin routes would go here if needed.
 
-module.exports = router;
+export default router;

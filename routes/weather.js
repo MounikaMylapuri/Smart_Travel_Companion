@@ -1,7 +1,9 @@
-const express = require("express");
-const axios = require("axios");
+import express from "express";
+import axios from "axios";
+import dotenv from "dotenv";
+
+dotenv.config();
 const router = express.Router();
-require("dotenv").config();
 
 // GET /api/weather?city=Tokyo
 router.get("/", async (req, res) => {
@@ -72,4 +74,4 @@ router.get("/", async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;
