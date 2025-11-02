@@ -70,7 +70,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             "Authorization"
           ] = `Bearer ${storedToken}`;
           const response = await axios.get("/api/auth/profile");
-          setUser(response.data.user || response.data); // fallback
+          setUser(response.data.user || response.data);
           setToken(storedToken);
         } catch {
           localStorage.removeItem("token");
@@ -89,7 +89,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const { token: newToken, user: userData } = response.data;
 
       if (!newToken || !userData)
-        throw new Error("Invalid response from server");
+        throw new Error("Authentication failed: Invalid server response.");
 
       localStorage.setItem("token", newToken);
       setToken(newToken);
@@ -112,10 +112,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         email,
         password,
       });
+
       const { token: newToken, user: userData } = response.data;
 
       if (!newToken || !userData)
-        throw new Error("Invalid response from server");
+        throw new Error("Registration failed: Server did not return token.");
 
       localStorage.setItem("token", newToken);
       setToken(newToken);

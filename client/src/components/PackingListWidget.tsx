@@ -12,7 +12,12 @@ import {
   Checkbox,
   Button,
 } from "@mui/material";
-import { CloudDownload, CheckCircle } from "@mui/icons-material";
+import { CloudDownload } from "@mui/icons-material";
+
+// --- PDF LIBRARY IMPORTS ---
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
+// ---------------------------
 
 interface Item {
   name: string;
@@ -24,12 +29,10 @@ interface Item {
 interface PackingListWidgetProps {
   city: string;
   country: string;
-  // We need these stats from the weather API call result
   avgTempMax: number;
   isRainy: boolean;
 }
 
-// NOTE: PDF Export is a separate task we can tackle next
 const PackingListWidget: React.FC<PackingListWidgetProps> = ({
   city,
   country,
@@ -39,6 +42,8 @@ const PackingListWidget: React.FC<PackingListWidgetProps> = ({
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  // --- NEW: Ref for the content area to capture ---
+  const printRef = React.useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetchChecklist = async () => {
@@ -47,7 +52,6 @@ const PackingListWidget: React.FC<PackingListWidgetProps> = ({
       setLoading(true);
       setError("");
       try {
-        // Call our new backend API with the determined parameters
         const response = await axios.get<Item[]>("/api/checklist", {
           params: {
             city,
@@ -57,7 +61,6 @@ const PackingListWidget: React.FC<PackingListWidgetProps> = ({
           },
         });
 
-        // Add 'packed: false' state for the frontend
         const listItems = response.data.map((item) => ({
           ...item,
           packed: false,
@@ -83,9 +86,42 @@ const PackingListWidget: React.FC<PackingListWidgetProps> = ({
     );
   };
 
+  // --- PDF Export Function (SRS REQ_03) ---
+  const handleExportPDF = async () => {
+    if (!printRef.current) return;
+
+    // Temporarily hide the Export button so it doesn't appear in the PDF screenshot
+    const exportButton = document.getElementById("export-button");
+    if (exportButton) exportButton.style.display = "none";
+
+    try {
+      const canvas = await html2canvas(printRef.current, { scale: 2 });
+      const imgData = canvas.toDataURL("image/png");
+
+      // Standard A4 dimensions in mm: 210 x 297
+      const pdf = new jsPDF("p", "mm", "a4");
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`PackingList_${city}.pdf`);
+
+      alert(`Exported Packing List for ${city}!`);
+    } catch (e) {
+      console.error("PDF Export failed:", e);
+      alert(
+        "Failed to generate PDF. Check if jsPDF and html2canvas are installed."
+      );
+    } finally {
+      // Show the button again
+      if (exportButton) exportButton.style.display = "flex";
+    }
+  };
+  // ------------------------------------------
+
   if (loading) {
     return (
-      <Box>
+      <Box display="flex" alignItems="center" gap={2}>
         <CircularProgress size={20} />
         <Typography sx={{ ml: 2 }}>Generating Checklist...</Typography>
       </Box>
@@ -102,14 +138,16 @@ const PackingListWidget: React.FC<PackingListWidgetProps> = ({
   }, {} as Record<string, Item[]>);
 
   return (
-    <Box>
+    // Attach the ref to the root Box to define the printable area
+    <Box ref={printRef}>
       <Box display="flex" justifyContent="space-between" alignItems="center">
         <Typography variant="h6">Packing Checklist</Typography>
         <Button
+          id="export-button" // ID used to hide the button during capture
           variant="contained"
           size="small"
           startIcon={<CloudDownload />}
-          // onClick={handleExportPDF} // To be implemented
+          onClick={handleExportPDF} // The handler is attached here
         >
           Export PDF
         </Button>

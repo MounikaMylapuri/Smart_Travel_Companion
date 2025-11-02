@@ -1,59 +1,84 @@
 const express = require("express");
 const router = express.Router();
-const Phrase = require("../models/phrase");
+const Phrase = require("../models/phrase"); // Assuming Phrase model is in ../models/Phrase.js
 
 // @route   GET /api/phrases
-// @desc    Get phrases for a specific language
-// @access  Private
+// @desc    Fetch common phrases, filterable by language and category.
+// @access  Public
 router.get("/", async (req, res) => {
-  const { language } = req.query; // e.g., "japanese"
-
-  if (!language) {
-    return res
-      .status(400)
-      .json({ message: "Language query parameter is required" });
-  }
-
-  // Language codes for Google TTS
-  const langCodeMap = {
-    japanese: "ja",
-    french: "fr",
-    spanish: "es",
-    italian: "it",
-    hindi: "hi",
-    // Add more as needed
-  };
-  const ttsLangCode = langCodeMap[language.toLowerCase()];
-
   try {
-    const phrasesFromDB = await Phrase.find({
-      language: language.toLowerCase(),
-    });
+    const { language, category } = req.query;
+    let filter = {};
 
-    // Dynamically add the Google TTS URL
-    const phrases = phrasesFromDB.map((phrase) => {
-      let ttsUrl = null;
-      if (ttsLangCode) {
-        // Create a URL that links to Google's TTS service
-        ttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${ttsLangCode}&q=${encodeURIComponent(
-          phrase.phrase
-        )}&client=tw-ob`;
-      }
+    // Filter by language (MANDATORY for phrase retrieval)
+    if (language) {
+      filter.language = language.toLowerCase();
+    } else {
+      // If no language is specified, we cannot return any phrases meaningfully
+      return res
+        .status(400)
+        .json({ message: "Language parameter is required to fetch phrases." });
+    }
 
-      return {
-        _id: phrase._id,
-        category: phrase.category,
-        phrase: phrase.phrase,
-        translation: phrase.translation,
-        ttsUrl: ttsUrl, // Add the new URL
-      };
-    });
+    // Optional filter by category
+    if (category) {
+      filter.category = category.toLowerCase();
+    }
+
+    const phrases = await Phrase.find(filter).lean();
+
+    if (phrases.length === 0) {
+      return res
+        .status(404)
+        .json({ message: `No phrases found for language: ${language}` });
+    }
 
     res.json(phrases);
   } catch (error) {
-    console.error("Phrase route error:", error.message);
+    console.error("Phrase fetch error:", error.message);
     res.status(500).json({ message: "Server error fetching phrases" });
   }
 });
+
+// @route   POST /api/phrases
+// @desc    Admin: Create a new phrase entry
+// @access  Protected (Requires Admin Authentication in production)
+router.post("/", async (req, res) => {
+  const {
+    language,
+    category,
+    originalText,
+    translation,
+    notes,
+    originalLanguage,
+  } = req.body;
+
+  if (!language || !originalText || !translation) {
+    return res.status(400).json({
+      message: "Missing required fields: language, originalText, translation",
+    });
+  }
+
+  try {
+    const newPhrase = new Phrase({
+      language: language.toLowerCase(),
+      category,
+      originalText,
+      translation,
+      notes,
+      originalLanguage: originalLanguage
+        ? originalLanguage.toLowerCase()
+        : undefined,
+    });
+
+    const phrase = await newPhrase.save();
+    res.status(201).json(phrase);
+  } catch (error) {
+    console.error("Phrase creation error:", error.message);
+    res.status(500).json({ message: "Server error creating phrase" });
+  }
+});
+
+// The usual PUT and DELETE admin routes would go here if needed.
 
 module.exports = router;

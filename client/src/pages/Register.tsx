@@ -15,7 +15,7 @@ import { useAuth } from "../contexts/AuthContext";
 
 const Register: React.FC = () => {
   const [formData, setFormData] = useState({
-    name: "",
+    fullName: "",
     email: "",
     password: "",
     confirmPassword: "",
@@ -27,16 +27,13 @@ const Register: React.FC = () => {
   const navigate = useNavigate();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setError("");
+    setLoading(true);
 
     if (formData.password !== formData.confirmPassword) {
       setError("Passwords do not match");
@@ -51,7 +48,7 @@ const Register: React.FC = () => {
     }
 
     try {
-      await register(formData.name, formData.email, formData.password);
+      await register(formData.fullName, formData.email, formData.password);
       navigate("/dashboard");
     } catch (err: any) {
       setError(err.message);
@@ -71,13 +68,7 @@ const Register: React.FC = () => {
         }}
       >
         <Paper elevation={3} sx={{ padding: 4, width: "100%" }}>
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-            }}
-          >
+          <Box display="flex" flexDirection="column" alignItems="center">
             <FlightTakeoff
               sx={{ fontSize: 40, color: "primary.main", mb: 2 }}
             />
@@ -103,12 +94,12 @@ const Register: React.FC = () => {
                 margin="normal"
                 required
                 fullWidth
-                id="name"
+                id="fullName"
                 label="Full Name"
-                name="name"
+                name="fullName"
                 autoComplete="name"
                 autoFocus
-                value={formData.name}
+                value={formData.fullName}
                 onChange={handleChange}
               />
               <TextField

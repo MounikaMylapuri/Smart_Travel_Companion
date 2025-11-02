@@ -1,211 +1,195 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
+import React, { useEffect, useState } from "react";
 import {
   Box,
   Typography,
   CircularProgress,
   Alert,
-  ListItem,
+  Divider,
 } from "@mui/material";
-import {
-  WbSunny,
-  Cloud,
-  Grain,
-  AcUnit,
-  Thunderstorm,
-  FilterDrama,
-  AccessTime,
-} from "@mui/icons-material";
-import { format } from "date-fns";
+import axios from "axios";
 
-// --- INTERFACES ---
-interface DailyWeather {
-  time: string[];
-  weathercode: number[];
-  temperature_2m_max: number[];
-  temperature_2m_min: number[];
+interface WeatherDay {
+  date: string;
+  tempMax: number;
+  tempMin: number;
+  code: number;
 }
 
-interface TimezoneData {
-  datetime: string;
-  abbreviation: string;
-  timezone: string;
-  utc_offset: string;
+interface WeatherData {
+  weather: {
+    temperature_2m_max: number[];
+    weathercode: number[];
+  };
+  timezone: {
+    timezone: string;
+    utc_offset_seconds: number;
+  };
 }
 
-interface ApiData {
-  weather: DailyWeather;
-  timezone: TimezoneData;
-}
-
-// --- WIDGET PROPS ---
 interface WeatherWidgetProps {
   city: string;
-  startDate: string;
-  endDate: string;
-  // Callback to send data back to parent
-  onDataFetched: (data: ApiData) => void;
 }
 
-// --- HELPER FUNCTIONS ---
-const getWeatherIcon = (code: number) => {
-  if ([0, 1].includes(code)) return <WbSunny sx={{ color: "#f9a825" }} />;
-  if ([2].includes(code)) return <Cloud sx={{ color: "#90a4ae" }} />;
-  if ([3].includes(code)) return <Cloud sx={{ color: "#546e7a" }} />;
-  if ([45, 48].includes(code)) return <FilterDrama sx={{ color: "#b0bec5" }} />;
-  if ([51, 53, 55, 61, 63, 65, 80, 81, 82].includes(code))
-    return <Grain sx={{ color: "#42a5f5" }} />;
-  if ([71, 73, 75, 85, 86].includes(code))
-    return <AcUnit sx={{ color: "#81d4fa" }} />;
-  if ([95, 96, 99].includes(code))
-    return <Thunderstorm sx={{ color: "#212121" }} />;
-  return <WbSunny sx={{ color: "#f9a825" }} />;
-};
-
-const formatDay = (dateString: string) => {
-  return format(new Date(`${dateString}T12:00:00`), "MMM d");
-};
-
-const TimezoneDisplay: React.FC<{ timezoneData: TimezoneData }> = ({
-  timezoneData,
-}) => {
-  const destinationTime = format(new Date(timezoneData.datetime), "h:mm aa");
-  const localTime = format(new Date(), "h:mm aa");
-
-  return (
-    <Box display="flex" alignItems="center" gap={4} mt={2} flexWrap="wrap">
-      <Box display="flex" alignItems="center" gap={1}>
-        <AccessTime color="action" />
-        <Box>
-          <Typography variant="body2" color="text.secondary">
-            Your Time
-          </Typography>
-          <Typography variant="h6" fontWeight="bold">
-            {localTime}
-          </Typography>
-        </Box>
-      </Box>
-      <Box display="flex" alignItems="center" gap={1}>
-        <AccessTime color="primary" />
-        <Box>
-          <Typography variant="body2" color="text.secondary">
-            {timezoneData.timezone.split("/").pop()?.replace("_", " ")} Time
-          </Typography>
-          <Typography variant="h6" fontWeight="bold">
-            {destinationTime}
-          </Typography>
-          <Typography variant="caption" color="text.secondary">
-            {timezoneData.abbreviation} ({timezoneData.utc_offset})
-          </Typography>
-        </Box>
-      </Box>
-    </Box>
-  );
-};
-
-// --- MAIN COMPONENT ---
-const WeatherWidget: React.FC<WeatherWidgetProps> = ({
-  city,
-  startDate,
-  endDate,
-  onDataFetched,
-}) => {
-  const [data, setData] = useState<ApiData | null>(null);
+const WeatherWidget: React.FC<WeatherWidgetProps> = ({ city }) => {
+  const [data, setData] = useState<WeatherData | null>(null);
+  const [forecast, setForecast] = useState<WeatherDay[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null); // ✅ Fixed typing
+  const [error, setError] = useState("");
+  const [localTime, setLocalTime] = useState<string>("");
+
+  const getWeatherIcon = (code: number) => {
+    if (code >= 200 && code < 300) return "⛈";
+    if (code >= 300 && code < 600) return "🌧";
+    if (code >= 600 && code < 700) return "❄";
+    if (code >= 700 && code < 800) return "🌫";
+    if (code === 800) return "☀";
+    if (code > 800) return "☁";
+    return "🌈";
+  };
 
   useEffect(() => {
     const fetchWeather = async () => {
-      if (!city || !startDate || !endDate) return;
-
-      setLoading(true);
-      setError(null);
       try {
-        const response = await axios.get<ApiData>("/api/weather", {
-          params: { city, startDate, endDate },
-        });
+        setLoading(true);
+        setError("");
+        const res = await axios.get(`/api/weather?city=${city}`);
+        setData(res.data);
 
-        // 1️⃣ Save local data
-        setData(response.data);
-
-        // 2️⃣ Send back to parent
-        onDataFetched(response.data);
+        const days: WeatherDay[] = res.data.weather.temperature_2m_max
+          .slice(0, 5)
+          .map((max: number, i: number) => ({
+            date: new Date(Date.now() + i * 86400000).toLocaleDateString(),
+            tempMax: max,
+            tempMin: max - 4,
+            code: res.data.weather.weathercode[i] || 800,
+          }));
+        setForecast(days);
       } catch (err: any) {
-        console.error("Weather API error:", err);
-        setError("Could not load weather data."); // ✅ Works now
+        console.error("Weather API Error:", err.message);
+        setError("Failed to fetch weather data");
       } finally {
         setLoading(false);
       }
     };
 
     fetchWeather();
-  }, [city, startDate, endDate, onDataFetched]);
+  }, [city]);
 
-  // --- UI States ---
-  if (loading) {
+  useEffect(() => {
+    if (!data?.timezone.utc_offset_seconds) return;
+
+    const updateLocalTime = () => {
+      const utc = new Date();
+      const local = new Date(
+        utc.getTime() + data.timezone.utc_offset_seconds * 1000
+      );
+      setLocalTime(local.toLocaleTimeString());
+    };
+
+    updateLocalTime();
+    const timer = setInterval(updateLocalTime, 1000);
+    return () => clearInterval(timer);
+  }, [data]);
+
+  if (loading)
     return (
-      <Box display="flex" alignItems="center" gap={2}>
-        <CircularProgress size={20} />
-        <Typography variant="body2" color="text.secondary">
-          Loading forecast & time...
-        </Typography>
-      </Box>
-    );
-  }
-
-  if (error || !data) {
-    return (
-      <Alert severity="error">{error || "Server error fetching data"}</Alert>
-    );
-  }
-
-  // --- MAIN RENDER ---
-  return (
-    <Box>
-      {/* Timezone Display */}
-      <TimezoneDisplay timezoneData={data.timezone} />
-
-      {/* Weather Forecast */}
-      <Typography variant="h6" gutterBottom sx={{ mt: 4 }}>
-        Weather Forecast for {city}
-      </Typography>
       <Box
         display="flex"
-        gap={2}
-        overflow="auto"
-        pb={1}
-        sx={{
-          "&::-webkit-scrollbar": { height: 8 },
-          "&::-webkit-scrollbar-thumb": {
-            backgroundColor: "#e0e0e0",
-            borderRadius: 4,
-          },
-        }}
+        justifyContent="center"
+        alignItems="center"
+        minHeight="100px"
       >
-        {data.weather.time.map((day, index) => (
+        <CircularProgress />
+      </Box>
+    );
+
+  if (error)
+    return (
+      <Alert severity="error" sx={{ width: "100%" }}>
+        {error}
+      </Alert>
+    );
+
+  if (!data)
+    return (
+      <Alert severity="warning" sx={{ width: "100%" }}>
+        No weather data available.
+      </Alert>
+    );
+
+  const avgTempMax =
+    data.weather.temperature_2m_max.length > 0
+      ? (
+          data.weather.temperature_2m_max.reduce((a, b) => a + b, 0) /
+          data.weather.temperature_2m_max.length
+        ).toFixed(1)
+      : "N/A";
+
+  const mainCode = data.weather.weathercode[0] || 800;
+  const icon = getWeatherIcon(mainCode);
+
+  const offsetHours = data.timezone.utc_offset_seconds / 3600;
+  const offsetSign = offsetHours >= 0 ? "+" : "-";
+  const offsetStr = `${offsetSign}${Math.abs(offsetHours)
+    .toFixed(0)
+    .padStart(2, "0")}:00`;
+
+  return (
+    <Box>
+      <Typography variant="h6" gutterBottom>
+        Weather in {city}
+      </Typography>
+
+      {/* TODAY’S WEATHER */}
+      <Box
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        sx={{ background: "#f9f9f9", p: 2, borderRadius: 2 }}
+      >
+        <Box>
+          <Typography>Average Max Temperature: {avgTempMax}°C</Typography>
+          <Typography>Timezone Offset: UTC{offsetStr}</Typography>
+          <Typography>Current Local Time: {localTime}</Typography>
+        </Box>
+
+        <Box textAlign="center" sx={{ mr: 3 }}>
+          <Typography sx={{ fontSize: "60px", textAlign: "center" }}>
+            {icon}
+          </Typography>
+          <Typography variant="body2">Today’s Weather</Typography>
+        </Box>
+      </Box>
+
+      <Divider sx={{ my: 2 }} />
+
+      {/* NEXT 5 DAYS FORECAST */}
+      <Typography variant="subtitle1" gutterBottom>
+        Next 5 Days Forecast
+      </Typography>
+
+      <Box
+        display="grid"
+        gridTemplateColumns="repeat(auto-fill, minmax(120px, 1fr))"
+        gap={2}
+      >
+        {forecast.map((day, i) => (
           <Box
-            key={day}
-            component={ListItem}
+            key={i}
             sx={{
-              display: "inline-flex",
-              flexDirection: "column",
-              p: 2,
-              minWidth: 120,
+              p: 1.5,
               textAlign: "center",
-              flexShrink: 0,
-              border: "1px solid #e0e0e0",
-              borderRadius: 1,
+              borderRadius: 2,
+              backgroundColor: "#f3f4f6",
+              boxShadow: 1,
             }}
           >
-            <Typography variant="subtitle1" fontWeight="bold">
-              {formatDay(day)}
+            <Typography variant="body2">{day.date}</Typography>
+            <Typography sx={{ fontSize: "32px", my: 1 }}>
+              {getWeatherIcon(day.code)}
             </Typography>
-            <Box my={1}>{getWeatherIcon(data.weather.weathercode[index])}</Box>
-            <Typography variant="body1" fontWeight="bold">
-              {Math.round(data.weather.temperature_2m_max[index])}°
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {Math.round(data.weather.temperature_2m_min[index])}°
+            <Typography variant="body2">
+              {day.tempMax.toFixed(1)}°C / {day.tempMin.toFixed(1)}°C
             </Typography>
           </Box>
         ))}

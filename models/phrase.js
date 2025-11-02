@@ -1,31 +1,49 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
-const PhraseSchema = new Schema({
-  language: {
-    type: String, // e.g., "japanese", "french"
-    required: true,
-    lowercase: true,
-    index: true,
+/**
+ * @desc Schema for storing common phrases and their translations for travel.
+ * Allows filtering by language and category.
+ */
+const PhraseSchema = new Schema(
+  {
+    language: {
+      type: String,
+      required: true,
+      lowercase: true,
+      trim: true,
+      index: true, // Index for fast lookups by language
+    },
+    category: {
+      type: String,
+      enum: ["greetings", "directions", "emergency", "food", "transport"],
+      default: "greetings",
+      required: true,
+    },
+    originalText: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    translation: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    notes: {
+      type: String, // Optional notes for pronunciation or usage
+      trim: true,
+    },
+    // Added a field to store the language the phrase is translated *from* // (e.g., if language is 'spanish', originalLanguage might be 'english')
+    originalLanguage: {
+      type: String,
+      default: "english",
+      lowercase: true,
+    },
   },
-  category: {
-    type: String, // e.g., "greetings", "dining", "emergency"
-    required: true,
-    lowercase: true,
-  },
-  phrase: {
-    type: String,
-    required: true,
-  },
-  translation: {
-    type: String,
-    required: true,
-  },
-  // We'll use Google Translate's text-to-speech URL
-  // This lets us generate audio dynamically without storing files
-  ttsUrl: {
-    type: String,
-  },
-});
+  {
+    timestamps: true, // Adds createdAt and updatedAt fields
+  }
+);
 
 module.exports = mongoose.model("Phrase", PhraseSchema);

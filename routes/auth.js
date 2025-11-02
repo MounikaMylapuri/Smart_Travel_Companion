@@ -1,191 +1,115 @@
-const express = require("express");
-const jwt = require("jsonwebtoken");
-const { body, validationResult } = require("express-validator");
-const User = require("../models/User");
-const auth = require("../middleware/auth");
+import express from "express";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+// Check your file path! (Assuming this is correct based on the previous context)
+import User from "../models/User.js";
 
 const router = express.Router();
 
-// @route   POST /api/auth/register
-// @desc    Register user
-// @access  Public
-router.post(
-  "/register",
-  [
-    body("name").notEmpty().withMessage("Name is required"),
-    body("email").isEmail().withMessage("Please include a valid email"),
-    body("password")
-      .isLength({ min: 6 })
-      .withMessage("Password must be at least 6 characters"),
-  ],
-  async (req, res) => {
-    try {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
-      }
+// --- POST /api/auth/register ---
+router.post("/register", async (req, res) => {
+  // We assume the frontend sends: { fullName: 'Hemanth Guntuku', email: '...', password: '...' }
+  // Based on the frontend component code, the context is passing (name, email, password)
+  // and the backend is correctly receiving the keys as 'fullName', 'email', 'password'.
+  const { fullName, email, password } = req.body;
 
-      const { name, email, password } = req.body;
+  // Use the name received from the frontend
+  const actualName = fullName;
 
-      // Check if user already exists
-      let user = await User.findOne({ email });
-      if (user) {
-        return res.status(400).json({ message: "User already exists" });
-      }
-
-      // Create new user
-      user = new User({
-        name,
-        email,
-        password,
-      });
-
-      await user.save();
-
-      // Create JWT token
-      const payload = {
-        userId: user._id,
-      };
-
-      jwt.sign(
-        payload,
-        process.env.JWT_SECRET,
-        { expiresIn: "7d" },
-        (err, token) => {
-          if (err) throw err;
-          res.status(201).json({
-            token,
-            user: {
-              id: user._id,
-              name: user.name,
-              email: user.email,
-              avatar: user.avatar,
-              preferences: user.preferences,
-              travelStats: user.travelStats,
-            },
-          });
-        }
-      );
-    } catch (error) {
-      console.error("Registration error:", error);
-      res.status(500).json({ message: "Server error" });
-    }
+  if (!actualName || !email || !password) {
+    return res
+      .status(400)
+      .json({ message: "Please enter all required fields." });
   }
-);
 
-// @route   POST /api/auth/login
-// @desc    Login user
-// @access  Public
-router.post(
-  "/login",
-  [
-    body("email").isEmail().withMessage("Please include a valid email"),
-    body("password").exists().withMessage("Password is required"),
-  ],
-  async (req, res) => {
-    try {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
-      }
-
-      const { email, password } = req.body;
-
-      // Check if user exists
-      const user = await User.findOne({ email });
-      if (!user) {
-        return res.status(400).json({ message: "Invalid credentials" });
-      }
-
-      // Check password
-      const isMatch = await user.comparePassword(password);
-      if (!isMatch) {
-        return res.status(400).json({ message: "Invalid credentials" });
-      }
-
-      // Create JWT token
-      const payload = {
-        userId: user._id,
-      };
-
-      jwt.sign(
-        payload,
-        process.env.JWT_SECRET,
-        { expiresIn: "7d" },
-        (err, token) => {
-          if (err) throw err;
-          res.json({
-            token,
-            user: {
-              id: user._id,
-              name: user.name,
-              email: user.email,
-              avatar: user.avatar,
-              preferences: user.preferences,
-              travelStats: user.travelStats,
-            },
-          });
-        }
-      );
-    } catch (error) {
-      console.error("Login error:", error);
-      res.status(500).json({ message: "Server error" });
-    }
-  }
-);
-
-// @route   GET /api/auth/profile
-// @desc    Get user profile
-// @access  Private
-router.get("/profile", auth, async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select("-password");
-    res.json(user);
+    let existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res
+        .status(400)
+        .json({ message: "User already exists with this email." });
+    }
+
+    // ✅ FIX 1: PASS THE PLAIN PASSWORD TO THE MODEL
+    // Mongoose pre('save') hook will handle hashing this for us.
+    const newUser = new User({
+      name: actualName,
+      email,
+      password: password, // Pass the PLAIN password
+    });
+
+    const SECRET = process.env.JWT_SECRET;
+
+    // Inside the try block of your register route, before jwt.sign():
+    if (!SECRET) {
+      console.error(
+        "FATAL JWT ERROR: JWT_SECRET environment variable is not set."
+      );
+      // This will cause a 500 error and report the problem immediately
+      throw new Error("JWT secret not configured on the server.");
+    }
+
+    const token = jwt.sign({ id: newUser._id }, SECRET, { expiresIn: "1h" });
+
+    res.status(201).json({
+      message: "Registration successful",
+      token,
+      user: {
+        id: newUser._id,
+        name: newUser.name,
+        email: newUser.email,
+      },
+    });
   } catch (error) {
-    console.error("Profile error:", error);
-    res.status(500).json({ message: "Server error" });
+    // Mongoose validation errors (e.g., minlength) are often caught here
+    console.error("Registration error:", error.message);
+    if (error.name === "ValidationError") {
+      return res.status(400).json({ message: error.message });
+    }
+    res.status(500).json({ message: "Server error during registration." });
   }
 });
 
-// @route   PUT /api/auth/profile
-// @desc    Update user profile
-// @access  Private
-router.put(
-  "/profile",
-  auth,
-  [
-    body("name").optional().notEmpty().withMessage("Name cannot be empty"),
-    body("email")
-      .optional()
-      .isEmail()
-      .withMessage("Please include a valid email"),
-  ],
-  async (req, res) => {
-    try {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
-      }
+// --- POST /api/auth/login ---
+router.post("/login", async (req, res) => {
+  const { email, password } = req.body;
 
-      const { name, email, preferences } = req.body;
-      const updateFields = {};
+  if (!email || !password)
+    return res
+      .status(400)
+      .json({ message: "Please provide email and password." });
 
-      if (name) updateFields.name = name;
-      if (email) updateFields.email = email;
-      if (preferences)
-        updateFields.preferences = { ...req.user.preferences, ...preferences };
+  try {
+    const user = await User.findOne({ email });
+    if (!user)
+      return res.status(400).json({ message: "Invalid email or password." });
 
-      const user = await User.findByIdAndUpdate(req.user.id, updateFields, {
-        new: true,
-        runValidators: true,
-      }).select("-password");
+    // ✅ FIX 2: Use the model's comparePassword method (if available) or bcrypt.compare
+    // Assuming your model has the comparePassword method:
+    const isMatch = await user.comparePassword(password); // Or await bcrypt.compare(password, user.password);
 
-      res.json(user);
-    } catch (error) {
-      console.error("Profile update error:", error);
-      res.status(500).json({ message: "Server error" });
-    }
+    if (!isMatch)
+      return res.status(400).json({ message: "Invalid email or password." });
+
+    const token = jwt.sign(
+      { id: user._id },
+      process.env.JWT_SECRET || "your_fallback_secret",
+      { expiresIn: "1h" }
+    );
+
+    res.status(200).json({
+      message: "Login successful",
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+      },
+    });
+  } catch (error) {
+    console.error("Login error:", error.message);
+    res.status(500).json({ message: "Server error during login." });
   }
-);
+});
 
-module.exports = router;
+export default router;

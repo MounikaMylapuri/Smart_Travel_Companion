@@ -1,14 +1,16 @@
-// NEW: Interface for a single packing list item
+// --- Shared Type Definitions for the Trip Planner Application ---
+
+// Interface for a single packing list item
 export interface PackingListItem {
   _id: string;
   item: string;
   packed: boolean;
 }
 
-// This is your main Trip interface
+// Your main Trip interface
 export interface Trip {
   _id: string;
-  name: string; // This should match your model (name or title)
+  name: string;
   description?: string;
   destination: {
     city: string;
@@ -29,6 +31,31 @@ export interface Trip {
   }[];
   notes?: string;
   tags: string[];
-  // NEW: Added packingList
   packingList: PackingListItem[];
+}
+
+// -----------------------------------------------------------
+// --- Weather/Timezone Interfaces (Used by WeatherWidget) ---
+// -----------------------------------------------------------
+
+export interface DailyWeather {
+  time: string[];
+  weathercode: number[];
+  temperature_2m_max: number[];
+  temperature_2m_min: number[];
+}
+
+// 🚨 CRITICAL FIX: Made all properties optional to handle data lookup failures
+export interface TimezoneData {
+  datetime?: string;
+  abbreviation?: string;
+  timezone?: string;
+  utc_offset?: string;
+}
+
+// 🚨 CRITICAL FIX: The core data structure returned by the /api/weather endpoint
+// The 'timezone' property MUST allow 'null' to be compatible with the backend.
+export interface ApiData {
+  weather: DailyWeather;
+  timezone: TimezoneData | null;
 }
