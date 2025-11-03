@@ -3,31 +3,23 @@ import mongoose from "mongoose";
 import dotenv from "dotenv";
 import path from "path";
 import cors from "cors";
+import { fileURLToPath } from "url";
 
-// Load environment variables from .env file
+// ---------- CONFIG ----------
 dotenv.config();
-
-// ✅ Import Routers using ESM syntax
-import weatherRouter from "./routes/weather.js";
-import checklistRouter from "./routes/checklist.js";
-import authRouter from "./routes/auth.js";
-import tripsRouter from "./routes/trips.js";
-import itinerariesRouter from "./routes/itineraries.js";
-import landmarksRouter from "./routes/landmarks.js";
-import phrasesRouter from "./routes/phrases.js";
-import plannerRouter from "./routes/planner.js";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-// Note: Using MONGO_URI as per your environment file (if MONGODB_URI is undefined)
 const MONGODB_URI = process.env.MONGO_URI;
 
-// --- 1. Database Connection ---
+// Resolve __dirname (ESM fix)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// ---------- DATABASE ----------
 const connectDB = async () => {
   if (!MONGODB_URI) {
-    console.error(
-      "FATAL ERROR: MONGO_URI is not defined in the environment variables."
-    );
+    console.error("❌ MONGO_URI is missing in .env");
     process.exit(1);
   }
   try {
@@ -40,18 +32,21 @@ const connectDB = async () => {
 };
 connectDB();
 
-// --- 2. Middleware ---
-
-// 1. CORS Middleware
+// ---------- MIDDLEWARE ----------
 app.use(cors());
-
-// 2. ✅ FIX: URL-encoded middleware to handle form data bodies
 app.use(express.urlencoded({ extended: false }));
-
-// 3. JSON Middleware
 app.use(express.json());
 
-// --- 3. Route Mounting ---
+// ---------- ROUTES ----------
+import weatherRouter from "./routes/weather.js";
+import checklistRouter from "./routes/checklist.js";
+import authRouter from "./routes/auth.js";
+import tripsRouter from "./routes/trips.js";
+import itinerariesRouter from "./routes/itineraries.js";
+import landmarksRouter from "./routes/landmarks.js";
+import phrasesRouter from "./routes/phrases.js";
+import plannerRouter from "./routes/planner.js";
+
 app.use("/api/weather", weatherRouter);
 app.use("/api/checklist", checklistRouter);
 app.use("/api/auth", authRouter);
@@ -61,24 +56,24 @@ app.use("/api/landmarks", landmarksRouter);
 app.use("/api/phrases", phrasesRouter);
 app.use("/api/planner", plannerRouter);
 
-// --- 4. Serve Static Assets (If in production) ---
+// ---------- SERVE REACT FRONTEND (for Render) ----------
 if (process.env.NODE_ENV === "production") {
-  const __dirname = path.resolve(
-    path.dirname(new URL(import.meta.url).pathname)
-  );
+  const clientBuildPath = path.join(__dirname, "client", "build");
 
-  app.use(express.static(path.join(__dirname, "client", "build")));
+  // Serve static files from React app
+  app.use(express.static(clientBuildPath));
 
+  // Handle React routing, return index.html for unknown routes
   app.get("*", (req, res) => {
-    res.sendFile(path.resolve(__dirname, "client", "build", "index.html"));
+    res.sendFile(path.join(clientBuildPath, "index.html"));
+  });
+} else {
+  app.get("/", (req, res) => {
+    res.send("🌍 API is running... (Development Mode)");
   });
 }
 
-// --- 5. Start Server ---
+// ---------- START SERVER ----------
 app.listen(PORT, () => {
-  console.log(
-    `🌍 Server running in ${
-      process.env.NODE_ENV || "development"
-    } mode on port ${PORT}`
-  );
+  console.log(`🚀 Server running on port ${PORT} (${process.env.NODE_ENV || "development"})`);
 });
