@@ -6,12 +6,10 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "client": "npm run dev --prefix client",
+    "build": "cd client && npm install && npm run build",
     "dev": "concurrently \"npm run server\" \"npm run client\"",
     "server": "nodemon server.js",
-    "build": "cd client && npm run build",
-    "install-client": "cd client && npm install",
-    "heroku-postbuild": "npm run install-client && npm run build",
+    "client": "npm start --prefix client",
     "test-db": "node test-db.js"
   },
   "keywords": [
@@ -47,5 +45,8 @@
     "@types/react-router-dom": "^5.3.3",
     "concurrently": "^8.2.0",
     "nodemon": "^3.0.1"
+  },
+  "engines": {
+    "node": ">=18.x"
   }
 }
