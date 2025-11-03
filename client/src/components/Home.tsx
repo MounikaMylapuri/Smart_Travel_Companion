@@ -4,7 +4,6 @@ import {
   Typography,
   Button,
   Container,
-  Grid,
   Card,
   CardMedia,
   CardContent,
@@ -14,12 +13,13 @@ import {
   MenuItem,
   SelectChangeEvent,
 } from "@mui/material";
+// Removed: import { Grid } from "@mui/material"; // No longer needed
 import { useNavigate } from "react-router-dom";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
 import { styled } from "@mui/material/styles";
 
-// Sample data for attractions
+// Sample data (unchanged)
 const attractions = [
   {
     id: 1,
@@ -47,7 +47,6 @@ const attractions = [
   },
 ];
 
-// Sample data for travel diaries
 const travelDiaries = [
   {
     id: 1,
@@ -82,7 +81,6 @@ const travelDiaries = [
   },
 ];
 
-// Sample data for trip cards
 const tripCards = [
   {
     id: 1,
@@ -136,7 +134,7 @@ const tripCards = [
   },
 ];
 
-// Styled components
+// Styled components (unchanged)
 const HeroSection = styled(Box)(({ theme }) => ({
   backgroundImage:
     "url(https://images.unsplash.com/photo-1587474260584-136574528ed5?auto=format&fit=crop&w=1000&q=60)",
@@ -204,8 +202,9 @@ const Home: React.FC = () => {
 
   return (
     <Box>
-      {/* Hero Section */}
+      {/* Hero Section (unchanged) */}
       <HeroSection>
+        {/* ... Hero Section content ... */}
         <Box sx={{ position: "relative", zIndex: 1, textAlign: "center" }}>
           <Typography variant="h2" component="h1" gutterBottom>
             Delhi
@@ -267,16 +266,37 @@ const Home: React.FC = () => {
         </Box>
       </HeroSection>
 
-      {/* Attractions Section */}
+      {/* --- */}
+
+      {/* 🏞️ Attractions Section (Flexbox Conversion) */}
       <Container maxWidth="lg" sx={{ my: 8 }}>
         <SectionTitle variant="h3">ATTRACTIONS</SectionTitle>
         <SectionSubtitle variant="subtitle1">
           — worth a thousand stories —
         </SectionSubtitle>
 
-        <Grid container spacing={3}>
+        {/* Replaced Grid container with Box using display: flex */}
+        <Box
+          sx={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 3, // Spacing between items
+            justifyContent: "space-between", // Optional: adjusts spacing
+          }}
+        >
           {attractions.map((attraction) => (
-            <Grid item xs={12} sm={6} md={3} key={attraction.id}>
+            // Replaced Grid item with Box using flex properties for responsiveness
+            <Box
+              key={attraction.id}
+              sx={{
+                flexBasis: {
+                  xs: "100%",
+                  sm: "calc(50% - 12px)",
+                  md: "calc(25% - 9px)",
+                }, // Equivalent to xs=12, sm=6, md=3
+                minWidth: 0, // Helps with flex-basis calculation
+              }}
+            >
               <Card
                 sx={{
                   height: "100%",
@@ -309,9 +329,9 @@ const Home: React.FC = () => {
                   <Typography variant="h6">{attraction.name}</Typography>
                 </CardContent>
               </Card>
-            </Grid>
+            </Box>
           ))}
-        </Grid>
+        </Box>
 
         <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
           <Button
@@ -337,7 +357,9 @@ const Home: React.FC = () => {
         </Box>
       </Container>
 
-      {/* Travel Diaries Section */}
+      {/* --- */}
+
+      {/* 📚 Travel Diaries Section (Flexbox Conversion) */}
       <Box sx={{ backgroundColor: "#FFCC80", py: 8 }}>
         <Container maxWidth="lg">
           <SectionTitle variant="h3">TRAVEL DIARIES</SectionTitle>
@@ -346,6 +368,7 @@ const Home: React.FC = () => {
           </SectionSubtitle>
 
           <Box sx={{ display: "flex", justifyContent: "center", mb: 4 }}>
+            {/* ... Filters (unchanged, already uses flex) ... */}
             <FormControl sx={{ minWidth: 200, mx: 1 }}>
               <Select
                 value={interest}
@@ -381,9 +404,28 @@ const Home: React.FC = () => {
             </FormControl>
           </Box>
 
-          <Grid container spacing={3}>
+          {/* Replaced Grid container with Box using display: flex */}
+          <Box
+            sx={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 3, // Spacing between items
+              justifyContent: "space-between", // Optional: adjusts spacing
+            }}
+          >
             {travelDiaries.map((diary) => (
-              <Grid item xs={12} sm={6} md={3} key={diary.id}>
+              // Replaced Grid item with Box using flex properties for responsiveness
+              <Box
+                key={diary.id}
+                sx={{
+                  flexBasis: {
+                    xs: "100%",
+                    sm: "calc(50% - 12px)",
+                    md: "calc(25% - 9px)",
+                  }, // Equivalent to xs=12, sm=6, md=3
+                  minWidth: 0,
+                }}
+              >
                 <Card
                   sx={{
                     height: "100%",
@@ -431,9 +473,9 @@ const Home: React.FC = () => {
                     </Typography>
                   </CardContent>
                 </Card>
-              </Grid>
+              </Box>
             ))}
-          </Grid>
+          </Box>
 
           <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
             <Button
@@ -460,7 +502,9 @@ const Home: React.FC = () => {
         </Container>
       </Box>
 
-      {/* Trip Cards Section */}
+      {/* --- */}
+
+      {/* ✈️ Trip Cards Section (Flexbox Conversion) */}
       <Container maxWidth="lg" sx={{ my: 8 }}>
         <Box
           sx={{
@@ -468,10 +512,22 @@ const Home: React.FC = () => {
             justifyContent: "space-between",
             alignItems: "center",
             mb: 4,
+            // Added flex-wrap for responsiveness on small screens
+            flexWrap: { xs: "wrap", md: "nowrap" },
+            "& > button": {
+              mt: { xs: 2, md: 0 }, // Add margin top to button on small screens
+            },
           }}
         >
-          <Box>
-            <FormControl sx={{ minWidth: 120, mr: 2 }}>
+          {/* ... Filter controls (unchanged) ... */}
+          <Box
+            sx={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 1, // Added gap for spacing between controls
+            }}
+          >
+            <FormControl sx={{ minWidth: 120, mr: { xs: 0, sm: 2 } }}>
               <Select
                 value={region}
                 onChange={handleRegionChange}
@@ -488,7 +544,7 @@ const Home: React.FC = () => {
               </Select>
             </FormControl>
 
-            <FormControl sx={{ minWidth: 120, mr: 2 }}>
+            <FormControl sx={{ minWidth: 120, mr: { xs: 0, sm: 2 } }}>
               <Select
                 value={interest}
                 onChange={handleInterestChange}
@@ -545,12 +601,36 @@ const Home: React.FC = () => {
           </Button>
         </Box>
 
-        <Grid container spacing={3}>
+        {/* Replaced Grid container with Box using display: flex */}
+        <Box
+          sx={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 3, // Spacing between items
+            // Justify content for even spacing, or 'flex-start' if wrapping is tight
+          }}
+        >
           {tripCards.map((trip) => (
-            <Grid item xs={12} sm={6} md={4} lg={2} key={trip.id}>
+            // Replaced Grid item with Box using flex properties for responsiveness
+            <Box
+              key={trip.id}
+              sx={{
+                // Equivalent to xs=12, sm=6, md=4, lg=2
+                flexBasis: {
+                  xs: "100%",
+                  sm: "calc(50% - 12px)",
+                  md: "calc(33.33% - 8px)",
+                  lg: "calc(16.66% - 5 * 3px / 6)", // Complex calculation for 6 items in a row with 3px gap
+                },
+                minWidth: 0,
+                // Ensure all card items are the same height within the row
+                display: "flex",
+                flexDirection: "column",
+              }}
+            >
               <Card
                 sx={{
-                  height: "100%",
+                  flexGrow: 1, // Important: allows card to fill the height of the Box item
                   display: "flex",
                   flexDirection: "column",
                   borderRadius: "12px",
@@ -603,9 +683,9 @@ const Home: React.FC = () => {
                   </Typography>
                 </Box>
               </Card>
-            </Grid>
+            </Box>
           ))}
-        </Grid>
+        </Box>
       </Container>
     </Box>
   );

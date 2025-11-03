@@ -12,15 +12,14 @@ import {
   Select,
   MenuItem,
   SelectChangeEvent,
-  Grid, // <--- Corrected Import: Grid is imported here
 } from "@mui/material";
+// NOTE: Grid component is no longer imported
 import { useNavigate } from "react-router-dom";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
 import { styled } from "@mui/material/styles";
-// The line 'import Grid from "@mui/material/Grid";' has been removed
 
-// Sample data for attractions
+// Sample data (unchanged)
 const attractions = [
   {
     id: 1,
@@ -48,7 +47,6 @@ const attractions = [
   },
 ];
 
-// Sample data for travel diaries
 const travelDiaries = [
   {
     id: 1,
@@ -83,7 +81,6 @@ const travelDiaries = [
   },
 ];
 
-// Sample data for trip cards
 const tripCards = [
   {
     id: 1,
@@ -137,7 +134,7 @@ const tripCards = [
   },
 ];
 
-// Styled components
+// Styled components (unchanged)
 const HeroSection = styled(Box)(({ theme }) => ({
   backgroundImage:
     "url(https://images.unsplash.com/photo-1587474260584-136574528ed5?auto=format&fit=crop&w=1000&q=60)",
@@ -203,10 +200,21 @@ const Home: React.FC = () => {
     setTripLength(event.target.value as string);
   };
 
+  // Utility function to calculate flexBasis for responsive layout with gap
+  // The 'gap' is set to 24px (MUI spacing=3)
+  const calculateFlexBasis = (columns: number, gap: number = 24) => {
+    if (columns === 12) return "100%";
+    const totalGap = 12 / columns - 1; // Number of gaps for the flex items in a row
+    return `calc(${100 / (12 / columns)}% - ${
+      totalGap * (gap / (12 / columns))
+    }px)`;
+  };
+
   return (
     <Box>
-      {/* Hero Section */}
+      {/* Hero Section (already uses Flexbox) */}
       <HeroSection>
+        {/* ... Hero Section content ... */}
         <Box sx={{ position: "relative", zIndex: 1, textAlign: "center" }}>
           <Typography variant="h2" component="h1" gutterBottom>
             Delhi
@@ -268,19 +276,40 @@ const Home: React.FC = () => {
         </Box>
       </HeroSection>
 
-      {/* Attractions Section */}
+      {/* --- */}
+
+      {/* 🏞️ Attractions Section (Flexbox) */}
       <Container maxWidth="lg" sx={{ my: 8 }}>
         <SectionTitle variant="h3">ATTRACTIONS</SectionTitle>
         <SectionSubtitle variant="subtitle1">
           — worth a thousand stories —
         </SectionSubtitle>
 
-        <Grid container spacing={3}>
+        {/* Flex container replaces Grid container */}
+        <Box
+          sx={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 3, // Spacing=3 (24px) for consistency with original Grid
+          }}
+        >
           {attractions.map((attraction) => (
-            <Grid item xs={12} sm={6} md={3} key={attraction.id}>
+            // Flex item replaces Grid item (xs=12, sm=6, md=3)
+            <Box
+              key={attraction.id}
+              sx={{
+                flexBasis: {
+                  xs: "100%", // 1 column (12/12)
+                  sm: `calc(50% - 12px)`, // 2 columns (6/12) - simpler calculation
+                  md: `calc(25% - 18px)`, // 4 columns (3/12) - simpler calculation
+                },
+                minWidth: 0, // Prevents overflow issues
+                display: "flex",
+              }}
+            >
               <Card
                 sx={{
-                  height: "100%",
+                  flexGrow: 1, // Card fills 100% height of its Flex item parent
                   display: "flex",
                   flexDirection: "column",
                   borderRadius: 4,
@@ -310,9 +339,9 @@ const Home: React.FC = () => {
                   <Typography variant="h6">{attraction.name}</Typography>
                 </CardContent>
               </Card>
-            </Grid>
+            </Box>
           ))}
-        </Grid>
+        </Box>
 
         <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
           <Button
@@ -338,7 +367,9 @@ const Home: React.FC = () => {
         </Box>
       </Container>
 
-      {/* Travel Diaries Section */}
+      {/* --- */}
+
+      {/* 📚 Travel Diaries Section (Flexbox) */}
       <Box sx={{ backgroundColor: "#FFCC80", py: 8 }}>
         <Container maxWidth="lg">
           <SectionTitle variant="h3">TRAVEL DIARIES</SectionTitle>
@@ -346,6 +377,7 @@ const Home: React.FC = () => {
             — for every passion —
           </SectionSubtitle>
 
+          {/* Filter controls already use flex */}
           <Box sx={{ display: "flex", justifyContent: "center", mb: 4 }}>
             <FormControl sx={{ minWidth: 200, mx: 1 }}>
               <Select
@@ -382,12 +414,31 @@ const Home: React.FC = () => {
             </FormControl>
           </Box>
 
-          <Grid container spacing={3}>
+          {/* Flex container replaces Grid container */}
+          <Box
+            sx={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 3, // Spacing=3 (24px)
+            }}
+          >
             {travelDiaries.map((diary) => (
-              <Grid item xs={12} sm={6} md={3} key={diary.id}>
+              // Flex item replaces Grid item (xs=12, sm=6, md=3)
+              <Box
+                key={diary.id}
+                sx={{
+                  flexBasis: {
+                    xs: "100%",
+                    sm: `calc(50% - 12px)`,
+                    md: `calc(25% - 18px)`,
+                  },
+                  minWidth: 0,
+                  display: "flex",
+                }}
+              >
                 <Card
                   sx={{
-                    height: "100%",
+                    flexGrow: 1, // Card fills 100% height of its Flex item parent
                     display: "flex",
                     flexDirection: "column",
                     borderRadius: 2,
@@ -432,9 +483,9 @@ const Home: React.FC = () => {
                     </Typography>
                   </CardContent>
                 </Card>
-              </Grid>
+              </Box>
             ))}
-          </Grid>
+          </Box>
 
           <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
             <Button
@@ -461,7 +512,9 @@ const Home: React.FC = () => {
         </Container>
       </Box>
 
-      {/* Trip Cards Section */}
+      {/* --- */}
+
+      {/* ✈️ Trip Cards Section (Flexbox) */}
       <Container maxWidth="lg" sx={{ my: 8 }}>
         <Box
           sx={{
@@ -469,10 +522,25 @@ const Home: React.FC = () => {
             justifyContent: "space-between",
             alignItems: "center",
             mb: 4,
+            // Added wrap/unwrap for better responsiveness on small screens
+            flexWrap: { xs: "wrap", md: "nowrap" },
+            "& > button": {
+              mt: { xs: 2, md: 0 },
+              width: { xs: "100%", sm: "auto" },
+            },
           }}
         >
-          <Box>
-            <FormControl sx={{ minWidth: 120, mr: 2 }}>
+          <Box
+            sx={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 1, // Added gap for spacing between controls
+              "& > *": {
+                mb: { xs: 1, sm: 0 }, // vertical margin on small screens for controls
+              },
+            }}
+          >
+            <FormControl sx={{ minWidth: 120, mr: { xs: 0, sm: 2 } }}>
               <Select
                 value={region}
                 onChange={handleRegionChange}
@@ -489,7 +557,7 @@ const Home: React.FC = () => {
               </Select>
             </FormControl>
 
-            <FormControl sx={{ minWidth: 120, mr: 2 }}>
+            <FormControl sx={{ minWidth: 120, mr: { xs: 0, sm: 2 } }}>
               <Select
                 value={interest}
                 onChange={handleInterestChange}
@@ -546,12 +614,32 @@ const Home: React.FC = () => {
           </Button>
         </Box>
 
-        <Grid container spacing={3}>
+        {/* Flex container replaces Grid container */}
+        <Box
+          sx={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 3, // Spacing=3 (24px)
+          }}
+        >
           {tripCards.map((trip) => (
-            <Grid item xs={12} sm={6} md={4} lg={2} key={trip.id}>
+            // Flex item replaces Grid item (xs=12, sm=6, md=4, lg=2)
+            <Box
+              key={trip.id}
+              sx={{
+                flexBasis: {
+                  xs: "100%", // 1 column (12/12)
+                  sm: `calc(50% - 12px)`, // 2 columns (6/12)
+                  md: `calc(33.33% - 16px)`, // 3 columns (4/12)
+                  lg: `calc(16.66% - 20px)`, // 6 columns (2/12)
+                },
+                minWidth: 0,
+                display: "flex", // Allows Card to take 100% height
+              }}
+            >
               <Card
                 sx={{
-                  height: "100%",
+                  flexGrow: 1, // Card fills 100% height
                   display: "flex",
                   flexDirection: "column",
                   borderRadius: "12px",
@@ -604,9 +692,9 @@ const Home: React.FC = () => {
                   </Typography>
                 </Box>
               </Card>
-            </Grid>
+            </Box>
           ))}
-        </Grid>
+        </Box>
       </Container>
     </Box>
   );

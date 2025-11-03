@@ -7,6 +7,8 @@ import {
   CardContent,
   Typography,
   Alert,
+  Container,
+  styled,
 } from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
@@ -15,6 +17,25 @@ import { useNavigate } from "react-router-dom";
 import { useTrip } from "../contexts/TripContext";
 import { Dayjs } from "dayjs";
 import dayjs from "dayjs";
+
+// Styled components for consistent UI
+const SectionTitle = styled(Typography)(({ theme }) => ({
+  fontWeight: 700,
+  marginBottom: theme.spacing(1),
+  textAlign: "center",
+}));
+
+const SectionSubtitle = styled(Typography)(({ theme }) => ({
+  marginBottom: theme.spacing(4),
+  textAlign: "center",
+  color: theme.palette.text.secondary,
+}));
+
+const StyledCard = styled(Card)(({ theme }) => ({
+  borderRadius: 16,
+  overflow: "hidden",
+  boxShadow: theme.shadows[3],
+}));
 
 export default function CreateTrip() {
   const navigate = useNavigate();
@@ -69,15 +90,16 @@ export default function CreateTrip() {
 
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
-      <Box p={4}>
-        <Card>
-          <CardContent>
-            <Typography variant="h5" gutterBottom>
-              Create New Trip
-            </Typography>
+      <Container maxWidth="md" sx={{ py: 4 }}>
+        <SectionTitle variant="h4">CREATE NEW TRIP</SectionTitle>
+        <SectionSubtitle variant="subtitle1">
+          — plan your next adventure —
+        </SectionSubtitle>
 
+        <StyledCard>
+          <CardContent sx={{ p: 4 }}>
             {error && (
-              <Alert severity="error" sx={{ mb: 2 }}>
+              <Alert severity="error" sx={{ mb: 3 }}>
                 {error}
               </Alert>
             )}
@@ -204,8 +226,8 @@ export default function CreateTrip() {
               </Button>
             </Box>
           </CardContent>
-        </Card>
-      </Box>
+        </StyledCard>
+      </Container>
     </LocalizationProvider>
   );
 }

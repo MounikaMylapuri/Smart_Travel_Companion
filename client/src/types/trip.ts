@@ -8,6 +8,7 @@ export interface PackingListItem {
 }
 
 // Your main Trip interface
+// Your main Trip interface
 export interface Trip {
   _id: string;
   name: string;
@@ -32,8 +33,9 @@ export interface Trip {
   notes?: string;
   tags: string[];
   packingList: PackingListItem[];
+  // 🚨 FIX: Add coverImage property here
+  coverImage?: string;
 }
-
 // -----------------------------------------------------------
 // --- Weather/Timezone Interfaces (Used by WeatherWidget) ---
 // -----------------------------------------------------------

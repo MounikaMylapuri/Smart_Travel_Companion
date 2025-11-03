@@ -18,10 +18,13 @@ import { TripProvider } from "./contexts/TripContext";
 import Navbar from "./components/Navbar";
 import ProtectedRoute from "./components/ProtectedRoute";
 
+// Pages
+import Home from "./pages/Home"; // <-- ADDED: Import the Home page
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import TripDetail from "./pages/TripDetail";
+import TripList from "./pages/TripList";
 import CreateTrip from "./pages/CreateTrip";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
@@ -36,9 +39,19 @@ const App: React.FC = () => {
               <CssBaseline />
               <Navbar />
               <Routes>
+                {/* Public Routes */}
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
 
+                {/* Protected Routes */}
+                <Route
+                  path="/"
+                  element={
+                    <ProtectedRoute>
+                      <Home />
+                    </ProtectedRoute>
+                  }
+                />
                 <Route
                   path="/dashboard"
                   element={
@@ -48,6 +61,14 @@ const App: React.FC = () => {
                   }
                 />
 
+                <Route
+                  path="/trips"
+                  element={
+                    <ProtectedRoute>
+                      <TripList />
+                    </ProtectedRoute>
+                  }
+                />
                 <Route
                   path="/trips/:id"
                   element={
@@ -75,6 +96,7 @@ const App: React.FC = () => {
                   }
                 />
 
+                {/* Fallback Route */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Router>

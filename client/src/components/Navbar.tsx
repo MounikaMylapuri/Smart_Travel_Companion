@@ -107,7 +107,7 @@ const Navbar: React.FC = () => {
           component="div"
           fontWeight="bold"
           sx={{ flexGrow: 1, cursor: "pointer" }}
-          onClick={() => navigate("/dashboard")}
+          onClick={() => navigate("/")}
         >
           {t("appName")} {/* Using fallback t() */}
         </Typography>
