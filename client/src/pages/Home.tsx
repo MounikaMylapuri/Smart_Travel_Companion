@@ -37,7 +37,7 @@ const attractions = [
     id: 3,
     name: "Har Ki Pauri",
     image:
-      "https://images.unsplash.com/photo-1591017683260-655b616faba8?auto=format&fit=crop&w=500&q=60",
+      "https://images.unsplash.com/photo-1653392083932-d5e9e7d2ccd1?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&q=80&w=1170",
   },
   {
     id: 4,
@@ -88,7 +88,7 @@ const tripCards = [
     days: 2,
     title: "A scenic exploration",
     image:
-      "https://images.unsplash.com/photo-1590050752117-42bb3bfd9a77?auto=format&fit=crop&w=500&q=60",
+      "https://images.unsplash.com/photo-1592051290693-c0f2bb382b5d?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&q=80&w=735",
     region: "South",
     interest: "Nature",
   },
@@ -98,7 +98,7 @@ const tripCards = [
     days: 2,
     title: "Jalandhar: cultural significance through",
     image:
-      "https://images.unsplash.com/photo-1588416499018-d8c621e4d1c5?auto=format&fit=crop&w=500&q=60",
+      "https://plus.unsplash.com/premium_photo-1754337714793-a6c0996c24b9?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&q=80&w=1074",
     region: "North",
     interest: "Culture",
   },
@@ -118,7 +118,7 @@ const tripCards = [
     days: 2,
     title: "A land of beauty and spiritual divinity",
     image:
-      "https://images.unsplash.com/photo-1621831714462-bec401ecbbfa?auto=format&fit=crop&w=500&q=60",
+      "https://plus.unsplash.com/premium_photo-1697730420879-dc2a8dbaa31f?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&q=80&w=687",
     region: "South",
     interest: "Spiritual",
   },
@@ -128,7 +128,7 @@ const tripCards = [
     days: 2,
     title: "Ajmer serenity",
     image:
-      "https://images.unsplash.com/photo-1591017683260-655b616faba8?auto=format&fit=crop&w=500&q=60",
+      "https://plus.unsplash.com/premium_photo-1697729683472-5e39cf4471ed?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&q=80&w=687",
     region: "West",
     interest: "Spiritual",
   },
@@ -412,6 +412,20 @@ const Home: React.FC = () => {
                 <MenuItem value="West">West</MenuItem>
               </Select>
             </FormControl>
+          </Box>
+
+          <Box sx={{ display: "flex", justifyContent: "center", mb: 4 }}>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={() => navigate("/diaries")}
+              sx={{
+                backgroundColor: "#FF9800",
+                "&:hover": { backgroundColor: "#F57C00" },
+              }}
+            >
+              View All Travel Diaries
+            </Button>
           </Box>
 
           {/* Flex container replaces Grid container */}

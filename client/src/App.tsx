@@ -28,6 +28,8 @@ import TripList from "./pages/TripList";
 import CreateTrip from "./pages/CreateTrip";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
+import DiaryDetail from "./pages/DiaryDetail"; // <-- ADDED: Import the DiaryDetail page
+import Diaries from "./pages/Diaries"; // <-- ADDED: Import the Diaries page
 
 const App: React.FC = () => {
   return (
@@ -92,6 +94,24 @@ const App: React.FC = () => {
                   element={
                     <ProtectedRoute>
                       <Profile />
+                    </ProtectedRoute>
+                  }
+                />
+
+                <Route
+                  path="/diary/:id"
+                  element={
+                    <ProtectedRoute>
+                      <DiaryDetail />
+                    </ProtectedRoute>
+                  }
+                />
+                
+                <Route
+                  path="/diaries"
+                  element={
+                    <ProtectedRoute>
+                      <Diaries />
                     </ProtectedRoute>
                   }
                 />

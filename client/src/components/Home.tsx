@@ -13,7 +13,6 @@ import {
   MenuItem,
   SelectChangeEvent,
 } from "@mui/material";
-// Removed: import { Grid } from "@mui/material"; // No longer needed
 import { useNavigate } from "react-router-dom";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
@@ -202,9 +201,8 @@ const Home: React.FC = () => {
 
   return (
     <Box>
-      {/* Hero Section (unchanged) */}
+      {/* Hero Section */}
       <HeroSection>
-        {/* ... Hero Section content ... */}
         <Box sx={{ position: "relative", zIndex: 1, textAlign: "center" }}>
           <Typography variant="h2" component="h1" gutterBottom>
             Delhi
@@ -234,6 +232,10 @@ const Home: React.FC = () => {
         </Box>
         <Box sx={{ position: "absolute", left: 20, top: "50%", zIndex: 2 }}>
           <IconButton
+            onClick={() => {
+              // Handle previous slide navigation
+              console.log("Previous slide");
+            }}
             sx={{
               backgroundColor: "rgba(255,255,255,0.3)",
               color: "white",
@@ -250,6 +252,10 @@ const Home: React.FC = () => {
         </Box>
         <Box sx={{ position: "absolute", right: 20, top: "50%", zIndex: 2 }}>
           <IconButton
+            onClick={() => {
+              // Handle next slide navigation
+              console.log("Next slide");
+            }}
             sx={{
               backgroundColor: "rgba(255,255,255,0.3)",
               color: "white",
@@ -268,43 +274,48 @@ const Home: React.FC = () => {
 
       {/* --- */}
 
-      {/* 🏞️ Attractions Section (Flexbox Conversion) */}
+      {/* 🏞️ Attractions Section (Flexbox) */}
       <Container maxWidth="lg" sx={{ my: 8 }}>
         <SectionTitle variant="h3">ATTRACTIONS</SectionTitle>
         <SectionSubtitle variant="subtitle1">
           — worth a thousand stories —
         </SectionSubtitle>
 
-        {/* Replaced Grid container with Box using display: flex */}
+        {/* Flex container */}
         <Box
           sx={{
             display: "flex",
             flexWrap: "wrap",
             gap: 3, // Spacing between items
-            justifyContent: "space-between", // Optional: adjusts spacing
+            justifyContent: "space-between",
           }}
         >
           {attractions.map((attraction) => (
-            // Replaced Grid item with Box using flex properties for responsiveness
+            /* Flex item: xs=12, sm=6, md=3 */
             <Box
               key={attraction.id}
               sx={{
                 flexBasis: {
                   xs: "100%",
                   sm: "calc(50% - 12px)",
-                  md: "calc(25% - 9px)",
-                }, // Equivalent to xs=12, sm=6, md=3
-                minWidth: 0, // Helps with flex-basis calculation
+                  md: "calc(25% - 18px)",
+                },
+                minWidth: 0,
+                display: "flex",
               }}
             >
               <Card
+                onClick={() =>
+                  navigate(`/create-trip?destination=${attraction.name}`)
+                }
                 sx={{
-                  height: "100%",
+                  flexGrow: 1, // Card fills container height
                   display: "flex",
                   flexDirection: "column",
                   borderRadius: 4,
                   overflow: "hidden",
                   boxShadow: 3,
+                  cursor: "pointer",
                   transition:
                     "transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out",
                   "&:hover": {
@@ -359,7 +370,7 @@ const Home: React.FC = () => {
 
       {/* --- */}
 
-      {/* 📚 Travel Diaries Section (Flexbox Conversion) */}
+      {/* 📚 Travel Diaries Section (Flexbox) */}
       <Box sx={{ backgroundColor: "#FFCC80", py: 8 }}>
         <Container maxWidth="lg">
           <SectionTitle variant="h3">TRAVEL DIARIES</SectionTitle>
@@ -368,7 +379,6 @@ const Home: React.FC = () => {
           </SectionSubtitle>
 
           <Box sx={{ display: "flex", justifyContent: "center", mb: 4 }}>
-            {/* ... Filters (unchanged, already uses flex) ... */}
             <FormControl sx={{ minWidth: 200, mx: 1 }}>
               <Select
                 value={interest}
@@ -404,31 +414,33 @@ const Home: React.FC = () => {
             </FormControl>
           </Box>
 
-          {/* Replaced Grid container with Box using display: flex */}
+          {/* Flex container */}
           <Box
             sx={{
               display: "flex",
               flexWrap: "wrap",
               gap: 3, // Spacing between items
-              justifyContent: "space-between", // Optional: adjusts spacing
+              justifyContent: "space-between",
             }}
           >
             {travelDiaries.map((diary) => (
-              // Replaced Grid item with Box using flex properties for responsiveness
+              /* Flex item: xs=12, sm=6, md=3 */
               <Box
                 key={diary.id}
                 sx={{
                   flexBasis: {
                     xs: "100%",
                     sm: "calc(50% - 12px)",
-                    md: "calc(25% - 9px)",
-                  }, // Equivalent to xs=12, sm=6, md=3
+                    md: "calc(25% - 18px)",
+                  },
                   minWidth: 0,
+                  display: "flex",
                 }}
               >
                 <Card
+                  onClick={() => navigate(`/diary/${diary.id}`)}
                   sx={{
-                    height: "100%",
+                    flexGrow: 1, // Card fills container height
                     display: "flex",
                     flexDirection: "column",
                     borderRadius: 2,
@@ -504,7 +516,7 @@ const Home: React.FC = () => {
 
       {/* --- */}
 
-      {/* ✈️ Trip Cards Section (Flexbox Conversion) */}
+      {/* ✈️ Trip Cards Section (Flexbox) */}
       <Container maxWidth="lg" sx={{ my: 8 }}>
         <Box
           sx={{
@@ -512,19 +524,18 @@ const Home: React.FC = () => {
             justifyContent: "space-between",
             alignItems: "center",
             mb: 4,
-            // Added flex-wrap for responsiveness on small screens
             flexWrap: { xs: "wrap", md: "nowrap" },
             "& > button": {
-              mt: { xs: 2, md: 0 }, // Add margin top to button on small screens
+              mt: { xs: 2, md: 0 },
             },
           }}
         >
-          {/* ... Filter controls (unchanged) ... */}
+          {/* Filter controls wrapper */}
           <Box
             sx={{
               display: "flex",
               flexWrap: "wrap",
-              gap: 1, // Added gap for spacing between controls
+              gap: 1,
             }}
           >
             <FormControl sx={{ minWidth: 120, mr: { xs: 0, sm: 2 } }}>
@@ -601,36 +612,36 @@ const Home: React.FC = () => {
           </Button>
         </Box>
 
-        {/* Replaced Grid container with Box using display: flex */}
+        {/* Flex container */}
         <Box
           sx={{
             display: "flex",
             flexWrap: "wrap",
             gap: 3, // Spacing between items
-            // Justify content for even spacing, or 'flex-start' if wrapping is tight
           }}
         >
           {tripCards.map((trip) => (
-            // Replaced Grid item with Box using flex properties for responsiveness
+            /* Flex item: xs=12, sm=6, md=4, lg=2 */
             <Box
               key={trip.id}
               sx={{
-                // Equivalent to xs=12, sm=6, md=4, lg=2
                 flexBasis: {
                   xs: "100%",
                   sm: "calc(50% - 12px)",
-                  md: "calc(33.33% - 8px)",
-                  lg: "calc(16.66% - 5 * 3px / 6)", // Complex calculation for 6 items in a row with 3px gap
+                  md: "calc(33.33% - 16px)",
+                  lg: "calc(20% - 24px)",
                 },
                 minWidth: 0,
-                // Ensure all card items are the same height within the row
                 display: "flex",
                 flexDirection: "column",
               }}
             >
               <Card
+                onClick={() =>
+                  navigate(`/create-trip?destination=${trip.city}`)
+                }
                 sx={{
-                  flexGrow: 1, // Important: allows card to fill the height of the Box item
+                  flexGrow: 1, // Card fills container height
                   display: "flex",
                   flexDirection: "column",
                   borderRadius: "12px",

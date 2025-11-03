@@ -450,7 +450,9 @@ const Dashboard: React.FC = () => {
                   height="140"
                   image={
                     trip.coverImage ||
-                    `/images/destinations/${trip.destination?.country?.toLowerCase() || 'default'}.jpg` ||
+                    `/images/destinations/${
+                      trip.destination?.country?.toLowerCase() || "default"
+                    }.jpg` ||
                     "/images/travel-default.jpg"
                   }
                   alt={trip.name}
