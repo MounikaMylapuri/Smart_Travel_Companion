@@ -1,200 +1,118 @@
 import React, { useEffect, useState } from "react";
-import {
-  Box,
-  Typography,
-  CircularProgress,
-  Alert,
-  Divider,
-} from "@mui/material";
 import axios from "axios";
-
-interface WeatherDay {
-  date: string;
-  tempMax: number;
-  tempMin: number;
-  code: number;
-}
-
-interface WeatherData {
-  weather: {
-    temperature_2m_max: number[];
-    weathercode: number[];
-  };
-  timezone: {
-    timezone: string;
-    utc_offset_seconds: number;
-  };
-}
 
 interface WeatherWidgetProps {
   city: string;
 }
 
+interface DayForecast {
+  date: string;
+  max: number | string;
+  min: number | string;
+  desc: string;
+  icon: string;
+}
+
+interface WeatherData {
+  weather: DayForecast[];
+  timezone: {
+    name: string;
+    country: string;
+    utc_offset_seconds: number;
+  };
+}
+
 const WeatherWidget: React.FC<WeatherWidgetProps> = ({ city }) => {
   const [data, setData] = useState<WeatherData | null>(null);
-  const [forecast, setForecast] = useState<WeatherDay[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const [localTime, setLocalTime] = useState<string>("");
 
-  const getWeatherIcon = (code: number) => {
-    if (code >= 200 && code < 300) return "⛈";
-    if (code >= 300 && code < 600) return "🌧";
-    if (code >= 600 && code < 700) return "❄";
-    if (code >= 700 && code < 800) return "🌫";
-    if (code === 800) return "☀";
-    if (code > 800) return "☁";
-    return "🌈";
-  };
-
   useEffect(() => {
+    if (!city) return;
+
     const fetchWeather = async () => {
       try {
-        setLoading(true);
-        setError("");
-        const res = await axios.get(`/api/weather?city=${city}`);
+        const res = await axios.get(`/api/weather?city=${encodeURIComponent(city)}`);
         setData(res.data);
 
-        const days: WeatherDay[] = res.data.weather.temperature_2m_max
-          .slice(0, 5)
-          .map((max: number, i: number) => ({
-            date: new Date(Date.now() + i * 86400000).toLocaleDateString(),
-            tempMax: max,
-            tempMin: max - 4,
-            code: res.data.weather.weathercode[i] || 800,
-          }));
-        setForecast(days);
+        const offset = res.data.timezone.utc_offset_seconds;
+        const local = new Date(Date.now() + offset * 1000);
+        setLocalTime(local.toLocaleString("en-GB", { timeZone: "UTC" }));
       } catch (err: any) {
-        console.error("Weather API Error:", err.message);
-        setError("Failed to fetch weather data");
-      } finally {
-        setLoading(false);
+        console.error("Weather fetch failed:", err.message);
+        setError("Unable to fetch weather data.");
       }
     };
 
     fetchWeather();
   }, [city]);
 
-  useEffect(() => {
-    if (!data?.timezone.utc_offset_seconds) return;
-
-    const updateLocalTime = () => {
-      const utc = new Date();
-      const local = new Date(
-        utc.getTime() + data.timezone.utc_offset_seconds * 1000
-      );
-      setLocalTime(local.toLocaleTimeString());
-    };
-
-    updateLocalTime();
-    const timer = setInterval(updateLocalTime, 1000);
-    return () => clearInterval(timer);
-  }, [data]);
-
-  if (loading)
-    return (
-      <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        minHeight="100px"
-      >
-        <CircularProgress />
-      </Box>
-    );
-
   if (error)
     return (
-      <Alert severity="error" sx={{ width: "100%" }}>
-        {error}
-      </Alert>
+      <div className="p-4 bg-red-50 text-red-600 rounded-2xl shadow">
+        ⚠️ {error}
+      </div>
     );
 
   if (!data)
     return (
-      <Alert severity="warning" sx={{ width: "100%" }}>
-        No weather data available.
-      </Alert>
+      <div className="p-4 text-gray-500 italic">
+        Fetching weather for {city}...
+      </div>
     );
 
-  const avgTempMax =
-    data.weather.temperature_2m_max.length > 0
-      ? (
-          data.weather.temperature_2m_max.reduce((a, b) => a + b, 0) /
-          data.weather.temperature_2m_max.length
-        ).toFixed(1)
-      : "N/A";
-
-  const mainCode = data.weather.weathercode[0] || 800;
-  const icon = getWeatherIcon(mainCode);
-
-  const offsetHours = data.timezone.utc_offset_seconds / 3600;
-  const offsetSign = offsetHours >= 0 ? "+" : "-";
-  const offsetStr = `${offsetSign}${Math.abs(offsetHours)
+  const { weather, timezone } = data;
+  const offsetHrs = timezone.utc_offset_seconds / 3600;
+  const offsetStr = `UTC${offsetHrs >= 0 ? "+" : ""}${offsetHrs
     .toFixed(0)
     .padStart(2, "0")}:00`;
 
+  // Safely convert strings to numbers for calculations
+  const avgMax =
+    weather.reduce((a, d) => a + Number(d.max), 0) / weather.length;
+  const avgMin =
+    weather.reduce((a, d) => a + Number(d.min), 0) / weather.length;
+
   return (
-    <Box>
-      <Typography variant="h6" gutterBottom>
-        Weather in {city}
-      </Typography>
+    <div className="p-4 bg-blue-50 rounded-2xl shadow">
+      <h3 className="text-xl font-semibold mb-2">🌦 Weather in {city}</h3>
 
-      {/* TODAY’S WEATHER */}
-      <Box
-        display="flex"
-        justifyContent="space-between"
-        alignItems="center"
-        sx={{ background: "#f9f9f9", p: 2, borderRadius: 2 }}
-      >
-        <Box>
-          <Typography>Average Max Temperature: {avgTempMax}°C</Typography>
-          <Typography>Timezone Offset: UTC{offsetStr}</Typography>
-          <Typography>Current Local Time: {localTime}</Typography>
-        </Box>
+      <div className="text-sm text-gray-600 mb-3">
+        {timezone.name}, {timezone.country} • {offsetStr} | Local time:{" "}
+        {localTime}
+      </div>
 
-        <Box textAlign="center" sx={{ mr: 3 }}>
-          <Typography sx={{ fontSize: "60px", textAlign: "center" }}>
-            {icon}
-          </Typography>
-          <Typography variant="body2">Today’s Weather</Typography>
-        </Box>
-      </Box>
+      <p className="text-gray-700 mb-3">
+        Avg Max: {avgMax.toFixed(1)}°C | Avg Min: {avgMin.toFixed(1)}°C
+      </p>
 
-      <Divider sx={{ my: 2 }} />
+      {/* Forecast cards row */}
+      <div className="flex overflow-x-auto gap-3 pb-2 scrollbar-hide">
+        {weather.slice(0, 5).map((day) => {
+          const max = Number(day.max);
+          const min = Number(day.min);
 
-      {/* NEXT 5 DAYS FORECAST */}
-      <Typography variant="subtitle1" gutterBottom>
-        Next 5 Days Forecast
-      </Typography>
-
-      <Box
-        display="grid"
-        gridTemplateColumns="repeat(auto-fill, minmax(120px, 1fr))"
-        gap={2}
-      >
-        {forecast.map((day, i) => (
-          <Box
-            key={i}
-            sx={{
-              p: 1.5,
-              textAlign: "center",
-              borderRadius: 2,
-              backgroundColor: "#f3f4f6",
-              boxShadow: 1,
-            }}
-          >
-            <Typography variant="body2">{day.date}</Typography>
-            <Typography sx={{ fontSize: "32px", my: 1 }}>
-              {getWeatherIcon(day.code)}
-            </Typography>
-            <Typography variant="body2">
-              {day.tempMax.toFixed(1)}°C / {day.tempMin.toFixed(1)}°C
-            </Typography>
-          </Box>
-        ))}
-      </Box>
-    </Box>
+          return (
+            <div
+              key={day.date}
+              className="flex-none w-28 bg-white p-3 rounded-xl shadow-sm text-center border border-gray-100"
+            >
+              <p className="text-xs text-gray-500 mb-1">
+                {new Date(day.date).toLocaleDateString("en-GB", {
+                  day: "2-digit",
+                  month: "short",
+                })}
+              </p>
+              <img src={day.icon} alt={day.desc} className="w-10 h-10 mx-auto" />
+              <p className="text-xs capitalize text-gray-700">{day.desc}</p>
+              <p className="text-sm font-semibold mt-1">
+                {max.toFixed(1)}° / {min.toFixed(1)}°
+              </p>
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 };
 
