@@ -10,10 +10,12 @@ router.post("/register", async (req, res) => {
   // We assume the frontend sends: { fullName: 'Hemanth Guntuku', email: '...', password: '...' }
   // Based on the frontend component code, the context is passing (name, email, password)
   // and the backend is correctly receiving the keys as 'fullName', 'email', 'password'.
-  const { fullName, email, password } = req.body;
+  console.log("Request Body:", req.body);
+  const { name, email, password } = req.body;
+  console.log("Request Body:", name);
 
   // Use the name received from the frontend
-  const actualName = fullName;
+  const actualName = name;
 
   if (!actualName || !email || !password) {
     return res
@@ -32,10 +34,12 @@ router.post("/register", async (req, res) => {
     // ✅ FIX 1: PASS THE PLAIN PASSWORD TO THE MODEL
     // Mongoose pre('save') hook will handle hashing this for us.
     const newUser = new User({
-      name: actualName,
+      name: name,
       email,
       password: password, // Pass the PLAIN password
     });
+    await newUser.save();
+    console.log("New user created:", newUser);
 
     const SECRET = process.env.JWT_SECRET;
 
@@ -81,14 +85,14 @@ router.post("/login", async (req, res) => {
   try {
     const user = await User.findOne({ email });
     if (!user)
-      return res.status(400).json({ message: "Invalid email or password." });
+      return res.status(400).json({ message: "Invalid email." });
 
     // ✅ FIX 2: Use the model's comparePassword method (if available) or bcrypt.compare
     // Assuming your model has the comparePassword method:
     const isMatch = await user.comparePassword(password); // Or await bcrypt.compare(password, user.password);
 
     if (!isMatch)
-      return res.status(400).json({ message: "Invalid email or password." });
+      return res.status(400).json({ message: "Invalid password." });
 
     const token = jwt.sign(
       { id: user._id },
