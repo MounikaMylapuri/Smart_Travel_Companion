@@ -5,100 +5,80 @@ import dotenv from "dotenv";
 dotenv.config();
 const router = express.Router();
 
-// GET /api/weather?city=Tokyo
 router.get("/", async (req, res) => {
   try {
     const { city } = req.query;
     if (!city) return res.status(400).json({ error: "City required" });
 
     const apiKey = process.env.WEATHER_API_KEY;
-    console.log("🌦 Fetching weather for:", city);
-    console.log("✅ Using API key:", apiKey?.slice(0, 6) + "...");
-
-    // Ensure API key is available
-    if (!apiKey)
-      return res.status(500).json({ error: "Server missing WEATHER_API_KEY" });
-
-    // Step 1: Geocoding (using OpenWeatherMap Geo API)
-    const geoUrl = `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(
-      city
-    )}&limit=1&appid=${apiKey}`;
-
-    const geoResponse = await axios.get(geoUrl);
-    const geoData = geoResponse.data;
-    if (!geoData || geoData.length === 0)
-      return res.status(404).json({ error: "City not found" });
-
-    const { lat, lon } = geoData[0];
-
-    // Step 2: Forecast (5-day / 3-hour steps)
-    const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
-    const forecastResponse = await axios.get(forecastUrl);
-    const forecastData = forecastResponse.data;
-
-    if (!forecastData.list) {
-      return res.status(500).json({ error: "Weather data unavailable" });
+    if (!apiKey) {
+      return res.status(500).json({ error: "Missing WEATHER_API_KEY in .env" });
     }
 
-    // 🛠️ Step 3: Correctly Group by date and calculate Daily Max/Min
-    const dailySummary = {};
-    let firstWeather = null;
+    // Current weather
+    const currentUrl = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(
+      city
+    )}&units=metric&appid=${apiKey}`;
 
-    forecastData.list.forEach((item, index) => {
-      const date = item.dt_txt.split(" ")[0]; // e.g., "2025-11-01"
-      const temp = item.main.temp;
+    // 5-day forecast
+    const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?q=${encodeURIComponent(
+      city
+    )}&units=metric&appid=${apiKey}`;
 
-      // Capture the first weather entry for overall icon/description
-      if (index === 0) {
-        firstWeather = item.weather[0];
-      }
+    // Fetch both in parallel
+    const [currentRes, forecastRes] = await Promise.all([
+      axios.get(currentUrl, { timeout: 15000 }),
+      axios.get(forecastUrl, { timeout: 15000 }),
+    ]);
 
-      if (!dailySummary[date]) {
-        // Initialize for a new day
-        dailySummary[date] = {
-          max: temp,
-          min: temp,
-          // Store weather codes/descriptions for daily representation if needed
-          weather: item.weather[0],
-        };
-      } else {
-        // Update min/max for the existing day
-        dailySummary[date].max = Math.max(dailySummary[date].max, temp);
-        dailySummary[date].min = Math.min(dailySummary[date].min, temp);
+    const current = currentRes.data;
+    const forecast = forecastRes.data.list;
 
-        // You might choose to update weather based on the 12:00:00 entry or the most extreme code
-        // For simplicity, we stick to the first entry's icon/desc for the overall summary.
-      }
+    // Group forecast into daily summaries
+    const dailyData = {};
+    forecast.forEach((entry) => {
+      const date = entry.dt_txt.split(" ")[0];
+      if (!dailyData[date]) dailyData[date] = { temps: [], descs: [], icons: [] };
+      dailyData[date].temps.push(entry.main.temp);
+      dailyData[date].descs.push(entry.weather[0].description);
+      dailyData[date].icons.push(entry.weather[0].icon);
     });
 
-    const temperature_2m_max = Object.values(dailySummary).map((d) => d.max);
-    const temperature_2m_min = Object.values(dailySummary).map((d) => d.min);
-    const time = Object.keys(dailySummary);
+    const weather = Object.entries(dailyData).map(([date, val]) => ({
+      date,
+      min: Math.min(...val.temps).toFixed(1),
+      max: Math.max(...val.temps).toFixed(1),
+      desc: val.descs[Math.floor(val.descs.length / 2)],
+      icon: `https://openweathermap.org/img/wn/${
+        val.icons[Math.floor(val.icons.length / 2)]
+      }@2x.png`,
+    }));
 
-    // 🛠️ Step 4: Send Formatted Response with correct structure
-    const weatherIcon = `https://openweathermap.org/img/wn/${firstWeather.icon}@2x.png`;
-    const weatherDesc = firstWeather.description;
+    const utc_offset_seconds = current.timezone;
 
     res.json({
-      weather: {
-        time: time,
-        temperature_2m_max: temperature_2m_max,
-        temperature_2m_min: temperature_2m_min, // Added min temp
-        // Note: weathercode and daily icon would require more complex grouping logic.
+      current: {
+        temp: current.main.temp,
+        feels_like: current.main.feels_like,
+        description: current.weather[0].description,
+        icon: `https://openweathermap.org/img/wn/${current.weather[0].icon}@2x.png`,
+        city: current.name,
+        country: current.sys.country,
+        local_time: new Date(Date.now() + utc_offset_seconds * 1000)
+          .toISOString()
+          .replace("T", " ")
+          .slice(0, 16),
       },
-      summary: {
-        icon: weatherIcon,
-        description: weatherDesc,
-      },
+      weather,
       timezone: {
-        name: forecastData.city.name,
-        country: forecastData.city.country,
-        utc_offset_seconds: forecastData.city.timezone,
+        utc_offset_seconds,
+        name: current.name,
+        country: current.sys.country,
       },
     });
   } catch (err) {
-    console.error("Weather API Error:", err.message);
-    res.status(500).json({ error: "Internal Server Error" });
+    console.error("Weather API error:", err.message);
+    res.status(500).json({ error: "Failed to fetch weather", details: err.message });
   }
 });
 
